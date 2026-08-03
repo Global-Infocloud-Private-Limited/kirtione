@@ -1,0 +1,1202 @@
+<?php defined('BASEPATH') or exit('No direct script access allowed'); ?>
+
+<?php init_head(); ?>
+
+<style>
+	.table-purchase_request {
+		overflow: auto;
+		max-height: 65vh;
+		width: 100%;
+		position: relative;
+		top: 0px;
+	}
+
+	.table-purchase_request thead th {
+		position: sticky;
+		top: 0;
+		z-index: 1;
+	}
+
+	.table-purchase_request tbody th {
+		position: sticky;
+		left: 0;
+	}
+
+
+
+
+
+	table {
+		border-collapse: collapse;
+		width: 100%;
+	}
+
+	th,
+	td {
+		padding: 1px 5px !important;
+		white-space: nowrap;
+		border: 1px solid !important;
+		font-size: 11px;
+		line-height: 1.42857143 !important;
+		vertical-align: middle !important;
+	}
+
+	th {
+		background: #50607b;
+
+		color: #fff !important;
+	}
+
+	tbody#for_uppercase {
+
+		text-transform: uppercase;
+
+	}
+
+
+
+	.btn-top-toolbar {
+
+		position: fixed;
+
+		top: 8.5%;
+
+		padding: 5px 0px;
+
+		-webkit-box-shadow: 0 -4px 1px -4px rgba(0, 0, 0, .1);
+
+		box-shadow: 0 -4px 1px -4px rgba(0, 0, 0, .1);
+
+		/*background: #50607b;*/
+
+		color: #fff;
+
+		/*width: calc(100% - 211px);*/
+
+		/*width:100%;*/
+
+		z-index: 5;
+
+		border-top: 1px solid #ededed;
+
+	}
+</style>
+
+<div id="wrapper">
+
+	<div class="content">
+
+		<div class="row">
+
+			<div class="col-md-10">
+
+				<div class="panel_s">
+
+					<div class="panel-body">
+
+						<div class="clearfix "></div>
+
+						<div class="row">
+
+							<div class="col-md-12">
+
+								<h4>Gate Control Details</h4>
+
+								<div class="table-purchase_request tableFixHead2">
+
+									<table class="tree table table-striped table-bordered table-purchase_request tableFixHead2" id="table-purchase_request" width="100%">
+
+										<!--<?php echo '<pre>';
+												print_r($details); ?>-->
+
+										<!--<?php echo '<pre>';
+												print_r($layers); ?>-->
+
+										<!--<?php echo '<pre>';
+												print_r($peripheral); ?>-->
+
+										<?php $status = $details->status; ?>
+
+										<input id="Main_id" value="<?php echo $details->id; ?>" hidden>
+
+										<tbody id="for_uppercase">
+
+											<tr>
+
+												<td><b>Account ID : </b></td>
+
+												<td><?php echo $details->AccountID; ?></td>
+
+											</tr>
+
+											<tr>
+
+												<td><b>Booking ID : </b></td>
+
+												<td><b><?php echo $details->BookingID; ?></b></td>
+
+											</tr>
+
+											<tr>
+
+												<?php
+
+
+
+												if ($details->TType == 'W') {
+
+													if ($details->status == 1) {
+
+														$status_val = "ASN GENERATED";
+													}
+
+													if ($details->status == 2) {
+
+														$status_val = "GATE IN GENERATED";
+													}
+
+													if ($details->status == 3) {
+
+														$status_val = "TARE WEIGHT CAPTURED ";
+													}
+
+													if ($details->status == 4) {
+
+														$status_val = "LOADING IN PROGRESS ";
+													}
+
+													if ($details->status == 5) {
+
+														$status_val = "LOADING FINISHED ";
+													}
+
+													if ($details->status == 6) {
+
+														$status_val = "QC DONE ";
+													}
+
+													if ($details->status == 7) {
+
+														$status_val = "FINAL QC DONE";
+													}
+
+													if ($details->status == 8) {
+
+														$status_val = "GROSS WEIGHT CAPTURED";
+													}
+
+													if ($details->status == 9) {
+
+														$status_val = "MARK AS EXIT";
+													}
+
+													if ($details->status == 10) {
+
+														$status_val = "EXIT";
+													}
+												}
+
+												$buttonprop = '';
+
+												if ($details->status >= 5) {
+
+													$buttonprop = 'disabled';
+												}
+
+												?>
+
+												<td><b>Status : </b></td>
+
+												<td><?php echo $status_val; ?></td>
+
+											</tr>
+
+											<tr>
+
+												<?php
+
+												if ($details->CustomerType == 1) {
+
+													$PartyType = 'Farmer';
+												}
+
+												if ($details->CustomerType == 2) {
+
+													$PartyType = 'Broker';
+												}
+
+												if ($details->CustomerType == 3) {
+
+													$PartyType = 'Trader';
+												}
+
+												if ($details->CustomerType == 4) {
+
+													$PartyType = 'Corporate/Processor';
+												}
+
+												?>
+
+												<td><b>Party Type : </b></td>
+
+												<td><?php echo $PartyType; ?></td>
+
+											</tr>
+
+											<tr>
+
+												<?php
+
+												if ($details->company != '') {
+
+													$PartyName = $details->company;
+												} else {
+
+													$PartyName = $details->firstname . ' ' . $details->lastname;
+												}
+
+												?>
+
+												<td><b>Party Name : </b></td>
+
+												<td><?php echo $PartyName; ?></td>
+
+											</tr>
+
+											<tr>
+
+												<td><b>Item ID : </b></td>
+
+												<td><?php echo $details->ItemID; ?></td>
+
+											</tr>
+
+											<tr>
+
+												<td><b>Item Name : </b></td>
+
+												<td><?php echo $details->ItemName; ?></td>
+
+											</tr>
+
+											<tr>
+
+												<td><b>ASN By : </b></td>
+
+												<td><?php echo ($SName['asn_by']->firstname . ' ' . $SName['asn_by']->lastname) ?></td>
+
+											</tr>
+
+											<tr>
+
+												<td><b>ASN Date: </b></td>
+
+												<td><?php echo _d($details->asn_date); ?></td>
+
+											</tr>
+
+											<?php
+
+											if (($details->status == 1) || ($details->status > 1)) {
+
+											?><tr>
+
+													<td><b>ASN : </b></td>
+
+													<td><a href="<?php echo admin_url(); ?>GateControl/viewAsn/<?php echo $details->BookingID . "/" . $details->ASNID; ?>" target="_blank">View ASN</a></td>
+
+												</tr><?php
+
+														}
+
+															?>
+
+											<?php
+
+											if (($details->status == 2) || ($details->status > 2)) {
+
+											?>
+
+												<tr>
+
+													<td><b>Gate In Pass : </b></td>
+
+													<td><a href="<?php echo admin_url(); ?>GateControl/viewGetInPass/<?php echo $details->BookingID . '/' . $details->Gate_in_ID; ?>" target="_blank">View Gate In Pass</a></td>
+
+												</tr><?php
+
+														}
+
+															?>
+
+											<tr>
+
+												<td><b>Quantity : </b></td>
+
+												<td><?php echo $details->quantity . ' ' . $details->unit; ?></td>
+
+											</tr>
+
+											<tr>
+
+												<td><b>Gate In By : </b></td>
+
+												<td><?php echo ($SName['gate_in_by']->firstname . ' ' . $SName['gate_in_by']->lastname) ?></td>
+
+											</tr>
+
+											<tr>
+
+												<td><b>Gate In Date : </b></td>
+
+												<td><?php echo _d($details->gate_in_date); ?></td>
+
+											</tr>
+											<tr>
+													<td><b>Vendor Invoice Date : </b></td>
+													<td><?= _d($details->vendor_invoice_date ?? ''); ?></td>
+											</tr>
+											<tr>
+													<td><b>Vendor Invoice Number : </b></td>
+													<td><?= $details->vendor_invoice_number ?? ''; ?></td>
+											</tr>
+											<tr>
+													<td><b>Vendor Invoice Doc : </b></td>
+													<td><?= (!empty($details->vendor_invoice_doc)) ? '<a href="' . base_url() . $details->vendor_invoice_doc . '" target="_blank" title="View Vendor Invoice Doc">Click to View</a>' : ''; ?></td>
+											</tr>
+											<tr>
+													<td><b>Vendor Ewaybill Number : </b></td>
+													<td><?= $details->vendor_ewaybill_number ?? ''; ?></td>
+											</tr>
+											<tr>
+													<td><b>Vendor Ewaybill Doc : </b></td>
+													<td><?= (!empty($details->vendor_ewaybill_doc)) ? '<a href="' . base_url() . $details->vendor_ewaybill_doc . '" target="_blank" title="View Vendor Ewaybill Doc">Click to View</a>' : ''; ?></td>
+											</tr>
+
+										</tbody>
+
+									</table>
+
+								</div>
+
+							</div>
+
+						</div>
+
+
+
+
+
+						<!--------- For Withdrawal ----------->
+
+						<div class="row">
+
+							<div class="col-md-12">
+
+								<h4>Empty Weight Details</h4>
+
+								<form id="tare_weight_form" method="POST" action="<?php echo admin_url(); ?>GateControl/AddEditEmptyWeightForWithdraw">
+
+									<table class="tree table-striped table-bordered table-purchase_request tableFixHead2" id="table-purchase_request" width="100%">
+
+										<thead>
+
+											<tr>
+
+												<th>Empty Weight(MT)</th>
+
+												<th>Top Image</th>
+
+												<th>Front Image</th>
+
+												<th>Side Image</th>
+
+												<th>Unloaded By</th>
+
+												<th>Unloaded Date-Time</th>
+
+												<th>Update</th>
+
+											</tr>
+
+										</thead>
+
+										<tbody>
+
+											<tr>
+
+												<input type="text" name="BookingID" value="<?php echo $details->BookingID ?>" hidden>
+
+												<input type="text" name="GateINID" value="<?php echo $details->Gate_in_ID ?>" hidden>
+
+												<input type="text" name="GrossWeight" id="GrossWeight" value="<?php echo number_format(($details->LoadedWeight / 10), 3, '.', ''); ?>" hidden>
+
+												<input type="text" name="id" value="<?php echo $details->id ?>" hidden>
+
+
+
+												<td><input style="width:70px;" id="tare_weight" name="tare_weight" value="<?php echo number_format(($details->TareWeight / 10), 3, '.', ''); ?>" onkeypress="return isNumber(this,event)"> </td>
+
+
+
+												<td><a target="_blank" href="<?php echo base_url() . $details->TWVhlTopImage ?>">View Image</a></td>
+
+												<td><a target="_blank" href="<?php echo base_url() . $details->TWVhlFrontImage ?>">View Image</a></td>
+
+												<td><a target="_blank" href="<?php echo base_url() . $details->TWVHLSideImage ?>">View Image</a></td>
+
+												<td><?php echo ($staffName['TWUserID']->firstname . ' ' . $staffName['TWUserID']->lastname) ?></td>
+
+												<td><?php echo _d($details->TWTransDate); ?></td>
+
+												<td><button class="updateCheck" <?php echo $LockWeight; ?> id="TareWeightSubmit" type="button" <?= $buttonprop; ?>><i class="fa fa-pencil" aria-hidden="true"></i></button></td>
+
+											</tr>
+
+										</tbody>
+
+									</table>
+
+								</form>
+
+							</div>
+
+						</div> <!-- Tare Weight Row End-->
+
+						<?php
+
+						if (($status == 3) || ($status > 3)) {
+
+						?>
+
+							<div class="row">
+
+								<form id="withdraw_details_form" method="POST" action="<?php echo admin_url(); ?>GateControl/updateWithdrawDetails">
+
+									<div class="col-md-12">
+
+										<h4>Deposit & Withdraw Details </h4>
+
+										<input type="text" name="GateINDate" value="<?php echo $details->gate_in_date; ?>" hidden>
+
+										<input type="text" name="ItemID" value="<?php echo $details->ItemID; ?>" hidden>
+
+										<input type="text" name="id" value="<?php echo $details->id; ?>" hidden>
+
+										<input type="text" name="BookingID" id="BookingID" value="<?php echo $details->BookingID; ?>" hidden>
+
+										<input type="text" name="AccountID" value="<?php echo $details->AccountID; ?>" hidden>
+
+										<input type="text" name="BookingType" id="BookingType" value="<?php echo $details->TType; ?>" hidden>
+
+										<input type="text" name="GateINID" id="GateINID" value="<?php echo $details->Gate_in_ID; ?>" hidden>
+
+										<input type="text" name="TareWeight" id="TareWeight" value="<?php echo number_format(($details->TareWeight / 10), 3, '.', ''); ?>" hidden>
+
+
+
+										<table class="tree table-striped table-bordered table-purchase_request tableFixHead2" id="table-purchase_request" width="100%">
+
+											<thead>
+
+												<tr>
+
+
+
+													<th width="5%">Booking ID</th>
+
+													<th width="5%">GateIN ID</th>
+
+													<th width="5%">QCID</th>
+
+													<th width="5%">Warehouse</th>
+
+													<th width="5%">Chamber</th>
+
+													<th width="5%">Stack</th>
+
+													<th width="5%">Lot</th>
+
+													<th width="5%">Deposit Qty</th>
+
+													<th width="5%">Withdraw Qty</th>
+
+													<th width="2%">Available Qty</th>
+
+													<th width="20%">Qty</th>
+
+												</tr>
+
+											</thead>
+
+											<tbody id="stack_tbody">
+
+												<?php
+
+												$i = 0;
+
+												$StockWtCheckForGateOut = 0;
+
+
+
+												foreach ($StockInvData->DepositList as $key => $value) {
+
+													$i++;
+
+													/*$StockWtCheckForGateOut += $value['WhQty'];
+
+														$availableQty = ($value['Weight'] - $value['WithdrawQty']);
+
+														$availableQty = ($value['WithdrawQty']);
+
+														$qty =  $value['WithdrawQty'];
+
+														$withdr= $value['Weight'] - $value['Weight'];*/
+
+													$currentWhQty = 0;
+
+
+
+													if ($value['TType'] == "T") {
+														$type = "TW";
+													} else if ($value['TType'] == "D") {
+														$type = "W";
+													} else if ($value['TType'] == "A") {
+														$type = "AW";
+													}
+
+
+
+													foreach ($StockInvData->WithdrawlQty as $wkey => $wval) {
+
+														if ($value['GateINID'] == $wval['GateINID'] && $value['QCID'] == $wval['QCID'] && $wval['TType'] == $type) {
+
+															$currentWhQty = $wval['Weight'];
+
+															$StockWtCheckForGateOut += $wval['Weight'];
+														}
+
+
+
+														$EditTransId = $wval['EditTransID'];
+													}
+
+
+
+													$AllwithdrawQty = 0;
+
+													foreach ($StockInvData->AllWithdrawList as $allwkey => $allwval) {
+
+														if ($value['GateINID'] == $allwval['GateINID'] && $value['QCID'] == $allwval['QCID']) {
+
+															$AllwithdrawQty += $allwval['Weight'];
+														}
+													}
+
+
+
+
+
+													$NetWithdrawQty = $AllwithdrawQty - $currentWhQty;
+
+													$avlwithdrawQty = $value['Weight'] - $NetWithdrawQty;
+
+												?>
+
+													<tr>
+
+														<td><input type="hidden" name="WithdrawList[<?php echo $i; ?>][BookingID]" value="<?= $value['BookingID'] ?>"><input type="hidden" name="WithdrawList[<?php echo $i; ?>][QCID]" id="QCID" value="<?= $value['QCID'] ?>"><?= $value['BookingID'] ?></td>
+
+														<td><input style="width:100%;" type="hidden" name="WithdrawList[<?php echo $i; ?>][GateINID]" value="<?= $value['GateINID'] ?>" class="form-control"><?= $value['GateINID'] ?></td>
+
+														<td><input style="width:100%;" type="hidden" name="WithdrawList[<?php echo $i; ?>][QCID]" id="QCID" value="<?= $value['QCID'] ?>" class="form-control"><?= $value['QCID'] ?></td>
+
+														<td><input style="width:100%;" type="hidden" name="WithdrawList[<?php echo $i; ?>][WHID]" id="WHID" value="<?= $value['WHID'] ?>" class="form-control"><?= $value['WHID'] ?></td>
+
+														<td><input style="width:100%;" type="hidden" name="WithdrawList[<?php echo $i; ?>][CHID]" id="CHID" value="<?= $value['CHID'] ?>" class="form-control"><?= $value['CHID'] ?></td>
+
+														<td><input style="width:100%;" type="hidden" name="WithdrawList[<?php echo $i; ?>][StackID]" id="StackID" value="<?= $value['StackID'] ?>" class="form-control"><?= $value['StackID'] ?></td>
+
+														<td><input style="width:100%;" type="hidden" name="WithdrawList[<?php echo $i; ?>][LOTID]" id="LOTID" value="<?= $value['LOTID'] ?>" class="form-control"><?= $value['LOTID'] ?></td>
+
+														<td><input style="width:100%;" type="hidden" name="WithdrawList[<?php echo $i; ?>][DepositWeight]" id="WithdrawWeight" value="<?= $value['Weight'] ?>" class="form-control"><?= number_format($value['Weight'], 2, '.', ''); ?></td>
+
+														<td><input style="width:100%;" type="hidden" name="WithdrawList[<?php echo $i; ?>][DepositWithdraw]" id="DepositWithdraw" value="<?= $NetWithdrawQty; ?>" class="form-control"><?= number_format($NetWithdrawQty, 2, '.', ''); ?></td>
+
+														<td><input style="width:100%;" type="hidden" name="WithdrawList[<?php echo $i; ?>][Available]" id="Available" value="<?= number_format($avlwithdrawQty, 2, '.', ''); ?>" class="form-control"><?= number_format($avlwithdrawQty, 2, '.', ''); ?></td>
+
+														<td><input style="width:100%;" type="text" name="WithdrawList[<?php echo $i; ?>][WithdrawQty]" id="WithdrawQty" max="<?= $avlwithdrawQty; ?>" data-avail="<?= $avlwithdrawQty; ?>" value="<?= $currentWhQty; ?>" class="form-control" onkeypress="return isNumber(this,event)" oninput="restrictQty(this)">
+
+															<input type="hidden" name="WithdrawList[<?php echo $i; ?>][EditTransID]" id="EditTransID" value="<?= $EditTransId ?>" class="form-control">
+														</td>
+
+														<input type="hidden" name="WithdrawList[<?php echo $i; ?>][TType]" id="TType" value="<?= $value['TType'] ?>" class="form-control"></td>
+
+													</tr>
+
+												<?php } ?>
+
+
+
+											</tbody>
+
+										</table>
+
+									</div>
+
+									<div class="col-md-3">
+
+										<div class="form-group">
+
+											<button class=" btn btn-success btn-sm" style="margin-top: 10px;" <?php echo $ChkStackAddUpdate; ?> type="button" id="WithdrawSubmit" <?= $buttonprop; ?>>Update Withdraw Details</button>
+
+
+
+										</div>
+
+									</div>
+
+								</form>
+
+							</div>
+
+						<?php
+
+						}
+
+						?>
+
+						<?php
+
+						if (($status == 4) || ($status > 4)) {
+
+						?>
+
+							<div class="row">
+
+								<div class="col-md-12">
+
+									<h4>Gross Weight Details</h4>
+
+									<form id="gross_weight_form" method="POST" action="<?php echo admin_url(); ?>GateControl/AddEditLoadedWeightForWithdraw">
+
+										<table class="tree  table-striped table-bordered table-purchase_request tableFixHead2" id="table-purchase_request" width="100%">
+
+											<thead>
+
+												<tr>
+
+													<th>Total Weight(MT)</th>
+
+													<th>Top Image</th>
+
+													<th>Front Image</th>
+
+													<th>Side Image</th>
+
+													<th>Loaded By</th>
+
+													<th>Loaded Date-Time</th>
+
+													<th>Update</th>
+
+												</tr>
+
+											</thead>
+
+											<tbody>
+
+												<tr>
+
+													<td><input style="width:70px;" id="total_weight" name="total_weight" value="<?php echo number_format(($details->LoadedWeight / 10), 3, '.', ''); ?>" onkeypress="return isNumber(this,event)"> </td>
+
+													<td><a target="_blank" href="<?php echo base_url() . $details->VhlTopImage ?>" target="_blank">View Image</a></td>
+
+													<td><a target="_blank" href="<?php echo base_url() . $details->VhlFrontImage ?>" target="_blank">View Image</a></td>
+
+													<td><a target="_blank" href="<?php echo base_url() . $details->VHLSideImage ?>" target="_blank">View Image</a></td>
+
+													<td><?php echo ($staffName['LWUserID']->firstname . ' ' . $staffName['LWUserID']->lastname) ?></td>
+
+													<td><?php echo _d($details->LWTransDate); ?></td>
+
+
+
+													<input type="text" name="BookingID" value="<?php echo $details->BookingID ?>" hidden>
+
+													<input type="text" name="GateINID" value="<?php echo $details->Gate_in_ID ?>" hidden>
+
+													<input type="text" name="id" value="<?php echo $details->id ?>" hidden>
+
+													<td><button class="updateCheck" <?php echo $LockWeight; ?> type="button" id="GrossWeightSubmit"><i class="fa fa-pencil" aria-hidden="true"></i></button></td>
+
+												</tr>
+
+											</tbody>
+
+										</table>
+
+									</form>
+
+								</div>
+
+							</div> <!-- Gross Weight Row End-->
+
+						<?php
+
+						}
+
+						?>
+
+						<?php $InwardWt = ($details->LoadedWeight - $details->TareWeight) / 10;
+
+						$ActualInwardWeightMT = $InwardWt;
+
+						?>
+
+						<?php
+
+						//if($details->TType == 'W'){ 
+
+
+
+						if ($status == 5) { ?>
+
+							<div class="row" style="margin:auto;width:100%;">
+
+								<h4>Gate Out Pass</h4>
+
+								<div class="col-md-12" style="padding:0px;">
+
+									<input type="text" name="NetWeightCheck" id="NetWeightCheck" value="<?php echo $ActualInwardWeightMT; ?>" hidden>
+
+									<input type="text" name="StockWeightCheck" id="StockWeightCheck" value="<?php echo $StockWtCheckForGateOut; ?>" hidden>
+
+
+
+									<button class="GenerateGateOut btn btn-info" id="GenerateGateOut" type="button">Generate Gate Out</button>
+
+								</div>
+
+							</div><!-- Gate Out Row End-->
+
+						<?php } ?>
+
+						<?php
+
+						if ($status >= 6) { ?>
+
+							<div class="row" style="margin:auto;width:100%;margin-top:2%;">
+
+								<h4>Gate Out Pass &nbsp;&nbsp;&nbsp;&nbsp;<a style="font-size:14px;" target="_blank" href="<?php echo admin_url(); ?>GateControl/viewGateOut/<?php echo $details->BookingID . '/' . $details->Gate_in_ID; ?>" target="_blank">View Gate Out Pass</a></h4>
+
+								<div class="col-md-12" style="padding:0px;">
+
+									<table class="tree table table-striped table-bordered table-purchase_request tableFixHead2" id="table-purchase_request" width="100%">
+
+										<thead>
+
+											<tr>
+
+												<th style="width:20%">Gate Out By</th>
+
+												<th>Gate Out Date</th>
+
+											</tr>
+
+										</thead>
+
+										<tbody>
+
+											<tr>
+
+												<td><?php echo ($SName['gate_out_by']->firstname . ' ' . $SName['gate_out_by']->lastname); ?></td>
+
+												<td><?php echo _d($details->gate_out_date); ?></td>
+
+											</tr>
+
+										</tbody>
+
+									</table>
+
+								</div>
+
+							<?php } ?>
+
+							<?php
+
+							if ($status == 6) { ?>
+
+								<h4>Mark Vehicle Exit</h4>
+
+								<form id="exit_form" method="POST" action="<?php echo admin_url(); ?>GateControl/markExitWithdrawal">
+
+									<input type="text" id="id" name="id" value="<?php echo $details->id; ?>" hidden>
+
+									<input type="text" name="BookingID" value="<?php echo $details->BookingID ?>" hidden>
+
+									<button type="button" class="btn btn-info exitBtn" style="margin-right: 25px;">Mark Exit</button>
+
+								</form>
+
+							</div>
+
+						<?php } ?>
+
+						<?php
+
+						if ($status >= 7) { ?>
+
+
+
+							<div class="row" style="margin:auto;width:100%;">
+
+								<h4>Exit Marked</h4>
+
+								<div class="col-md-12" style="padding:0px;margin-bottom:20px;">
+
+									<table class="tree table table-striped table-bordered table-purchase_request tableFixHead2" id="table-purchase_request" width="100%">
+
+										<thead>
+
+											<tr>
+
+												<th style="width:20%">Exit By</th>
+
+												<th>Exit Date</th>
+
+											</tr>
+
+										</thead>
+
+										<tbody>
+
+											<tr>
+
+												<td><?php echo ($SName['exit_by']->firstname . ' ' . $SName['exit_by']->lastname); ?></td>
+
+												<td><?php echo _d($details->exit_date); ?></td>
+
+											</tr>
+
+										</tbody>
+
+									</table>
+
+								</div>
+
+							</div>
+
+						<?php } ?>
+
+						<?php //} 
+						?>
+
+					</div>
+
+				</div>
+
+			</div>
+
+		</div>
+
+		<div class="col-md-4">
+
+			<div class="btn-top-toolbar bottom-transaction sm:tw-flex sm:tw-items-center sm:tw-justify-between">
+
+				<div class="col-md-6">
+
+					<a href="#" class="btn btn-success mright5" data-toggle="tooltip" data-title="page reload" onclick="reloadCurrentPage(); return false;" data-original-title="" title="">
+
+						<i class="fa fa-refresh"> &nbsp;&nbsp;&nbsp;&nbsp;Reload Page</i>
+
+					</a>
+
+				</div>
+
+			</div>
+
+		</div>
+
+	</div>
+
+</div>
+
+<?php init_tail(); ?>
+
+<script>
+	$('#GenerateGateOut').click(function() {
+
+		var GrossWeight = $('#GrossWeight').val();
+
+		var TareWeight = $('#TareWeight').val();
+
+		//var KYC = $('#KYC').val();
+
+		var BookingID = $('#BookingID').val();
+
+		var GateINID = $('#GateINID').val();
+
+		var BookingType = $('#BookingType').val();
+
+		var StockWeightCheck = $('#StockWeightCheck').val();
+
+		var NetWeightCheck = $('#NetWeightCheck').val();
+
+		console.log('NetWeightCheck : ' + NetWeightCheck);
+
+		console.log('StockWeightCheck : ' + StockWeightCheck);
+
+		/*if(KYC < 6){
+
+		    alert('please complate KYC first');
+
+		}else */
+		if (TareWeight <= 0) {
+
+			alert('please enter Tare Weight');
+
+		} else if (GrossWeight <= 0) {
+
+			alert('please enter Gross Weight');
+
+		} else if (StockWeightCheck > NetWeightCheck) {
+
+			alert('Stock details weight is greter than net weight please check and update stock weight');
+
+		} else if (parseFloat(StockWeightCheck) < parseFloat(NetWeightCheck)) {
+
+			alert('Stock details weight is less than net weight please check and update stock weight');
+
+		} else {
+
+			$.ajax({
+
+				url: "<?php echo admin_url(); ?>GateControl/generateGateOut",
+
+				dataType: "json",
+
+				method: "POST",
+
+				data: {
+					BookingID: BookingID,
+					GateINID: GateINID,
+					BookingType: BookingType
+				},
+
+				beforeSend: function() {
+
+					$('#sendrequest').html('Please wait request sending.');
+
+				},
+
+				success: function(r) {
+
+					if (r == true) {
+
+						window.open("<?php echo admin_url(); ?>GateControl/viewGateOut/" + BookingID + "/" + GateINID, '_blank');
+
+						window.location.reload();
+
+					} else {
+
+						window.location.reload();
+
+					}
+
+				}
+
+			});
+
+		}
+
+	});
+
+	// Save Gross Weight Validation
+
+	$('#GrossWeightSubmit').click(function() {
+
+		var GrossWeight = $('#total_weight').val();
+
+		var TareWeight = $('#tare_weight').val();
+
+		if (parseFloat(TareWeight) >= parseFloat(GrossWeight)) {
+
+			alert('please enter Gross Weight is grater than Tare Weight');
+
+		} else if (parseFloat(GrossWeight) <= 0) {
+
+			alert('please enter gross weight is grater than zero');
+
+		} else {
+
+			$('#gross_weight_form').submit();
+
+		}
+
+	});
+
+	$('#WithdrawSubmit').click(function() {
+
+
+
+		$('#withdraw_details_form').submit();
+
+
+
+	});
+
+	function reloadCurrentPage() {
+
+		location.reload();
+
+	}
+
+	$('.exitBtn').click(function() {
+
+		$('#exit_form').submit();
+
+	});
+
+	// Save tare Weight Validation
+
+	$('#TareWeightSubmit').click(function() {
+
+		var GrossWeight = $('#GrossWeight').val();
+
+		var TareWeight = $('#tare_weight').val();
+
+
+
+		// if(parseFloat(TareWeight) >= parseFloat(GrossWeight)){
+
+		// alert('please enter Tare Weight is less than Gross Weight');
+
+		// }else if(parseFloat(TareWeight) <= 0){
+
+		// alert('please enter tare weight is grater than zero');
+
+		// }else{
+
+		// }
+
+		$('#tare_weight_form').submit();
+
+	});
+</script>
+
+<script>
+	function restrictQty(input) {
+
+		let max = parseFloat(input.getAttribute('max'));
+
+		let val = parseFloat(input.value);
+
+
+
+		if (val > max) {
+
+			alert('Entered quantity exceeds available stock!');
+
+			input.value = max;
+
+		}
+
+	}
+
+	function isNumber(evt) {
+
+		evt = (evt) ? evt : window.event;
+
+		var charCode = (evt.which) ? evt.which : evt.keyCode;
+
+		if (charCode = 46 && charCode > 31
+
+			&&
+			(charCode < 48 || charCode > 57)) {
+
+			return false;
+
+		}
+
+		return true;
+
+	}
+</script>
+
+<script>
+	$(document).ready(function() {
+
+		var unit = $('#unit_val').val();
+
+		var quantity = $('#quantity').val();
+
+		$('#unit').val(unit).selectpicker('refresh');
+
+		$('#qty').val(quantity);
+
+	});
+</script>
+
+<script>
+	$(document).ready(function() {
+
+		$('#payment_approve').change(function() {
+
+			var payment = $('#payment_approve :selected').val();
+
+			var id = $('#id').val();
+
+
+
+			if ((payment != '') && (id != '')) {
+
+				if (confirm("Do you want to Update Payment Status?") == true) {
+
+					$('#approve_payment_form').submit();
+
+				} else {
+
+					return false;
+
+				}
+
+			}
+
+		});
+
+	});
+</script>
+
+<script>
+	$('#saveBtn').click(function() {
+
+		var check = $('input').val();
+
+		if ((check != null) || (check != '')) {
+
+			$('#final_qc_form').submit();
+
+		}
+
+	});
+</script>
+
+<script>
+	$('#updateBtn').click(function() {
+
+		var check = $('input').val();
+
+		if ((check != null) || (check != '')) {
+
+			$('#final_qc_form2').submit();
+
+		}
+
+	});
+</script>
+
+</body>
+
+</html>

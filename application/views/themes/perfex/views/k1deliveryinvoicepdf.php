@@ -1,0 +1,1344 @@
+<?php
+	
+	defined('BASEPATH') or exit('No direct script access allowed');
+	
+	
+	$dimensions = $pdf->getPageDimensions();
+	
+	$pdf->SetMargins(5, 7, 5, 0);
+	//$pdf->Ln(0);
+	
+	$get_order_list = k1get_order_list($invoice->OrderID);
+	$count = 0;
+	$count_order = count($get_order_list);
+	
+	// print_r($get_order_list);
+	// for ($i = 0; $i < 3; $i++) {
+	$html = '';
+	foreach ($get_order_list as $key => $order_detail) {
+		
+        $client_detail = get_client_detail($order_detail["AccountID"]);
+        $client_details2 = get_client_detail($order_detail["AccountID"]);
+        $FY = $order_detail["FY"];
+        $PlantDetail = GetPlantDetails($order_detail["PlantID"],$order_detail["FY"]);
+        $gst_type = get_gst_type();
+        $sales_detail = K1get_sales_details($invoice->ChallanID,$order_detail["OrderID"]);
+		// print_r($sales_detail);die;
+		if(!empty($sales_detail->ShippingID)){
+		$addressdata = K1get_shipping_details($sales_detail->ShippingID);
+		$deliveryAdd = $addressdata->address;
+		}else{
+		$deliveryAdd = 'Pickup';
+		}
+        $PlantID = $sales_detail->PlantID;
+        $state_detail = get_state_detail($client_detail->state);
+        $billing_state_detail = get_state_detail($client_detail->billing_state);
+        $shipping_state_detail = get_state_detail($client_detail->shipping_state);
+        
+        $qty = 0;
+        $amt = 0;
+        $dis_amt = 0;
+        $taxable_amt_item = 0;
+        $order_total = 0;
+        
+        $title = "";
+        // if($order_detail["OrderType"] == "TaxItems"){
+		// }
+            $title = "INVOICE (ORIGINAL FOR RECIPIENT)";
+        // if($order_detail["OrderType"] == "NonTaxItems"){
+            // $title = "BILL OF SUPPLY";
+		// }
+        $pdf->Ln(hooks()->apply_filters('pdf_info_and_table_separator', 1));
+        //$html .= '<div class="page-break-after: always;">';
+        $html .= '<table style="width: 100%; font-size:12px;font-weight:400;" cellspacing="1" cellpadding="3" border="1" >';
+		
+        $html .= '<thead>';
+        $html .= '<tr >
+        <th colspan="4" style="border: 1px solid #333;"><p style="text-align:center;font-size:14px;"><b>'.$title.'</b><br><b>'.$PlantDetail->FIRMNAME.'</b><br><b>'.$PlantDetail->ADDRESS1.' '.$PlantDetail->ADDRESS2.'<br></b><b>GSTIN '.$PlantDetail->GSTNO.', <i>fssai</i> Lic.no '.$PlantDetail->FLNO1.' </b><br><b>Contact No. : '.$PlantDetail->PHONENO.'</b></p></th>
+        </tr>';
+        $html .= '<tr>
+        <th style="border-left: 1px solid #333;" width="20%">Invoice No.</th>
+        <th style="border-right: 1px solid #333;" width="30%"><b>'.$sales_detail->SalesID.'</b></th>
+        <th width="20%" style="border-left: 1px solid #333;">Ack No.</th>
+        <th style="border-right: 1px solid #333;" width="30%"><b></b></th>
+        </tr>';
+        
+        $html .= '<tr>
+        <th style="border-left: 1px solid #333;" width="20%">Invoice Date</th>
+        <th style="border-right: 1px solid #333;" width="30%"><b>'. substr($sales_detail->Transdate,0,10) .'</b></th>
+        <th width="20%" style="border-left: 1px solid #333;">Ack Date</th>
+        <th style="border-right: 1px solid #333;" width="30%"><b></b></th>
+        </tr>';
+        
+        $html .= '<tr>
+        <th style="border-left: 1px solid #333;" width="20%">Challan No</th>
+        <th style="border-right: 1px solid #333;" width="30%"><b>'. $invoice->ChallanID .'</b></th>
+        <th width="20%" style="border-left: 1px solid #333;">Vehicle No</th>
+        <th style="border-right: 1px solid #333;" width="30%"><b>'.$invoice->VehicleID.'</b></th>
+        </tr>';
+        
+        $html .= '<tr>
+        <th style="border-left: 1px solid #333;border-bottom: 1px solid #333;" width="20%">Order No</th>
+        <th style="border-right: 1px solid #333;border-bottom: 1px solid #333;" width="30%"><b>'. $order_detail["OrderID"] .'</b></th>
+        <th width="20%" style="border-bottom: 1px solid #333;border-left: 1px solid #333;">eWayBillNo</th>
+        <th style="border-right: 1px solid #333;border-bottom: 1px solid #333;" width="30%"><b></b></th>
+        </tr>';
+        
+        $html .= '<tr>
+        <th style="border-left: 1px solid #333;border-right: 1px solid #333;" width="50%" colspan="2"><b>Bill To</b></th>
+        <th style="border-right: 1px solid #333;border-left: 1px solid #333;" width="50%" colspan="2"><b>Ship To</b></th>
+        </tr>';
+        
+        $html .= '<tr>
+        <th style="border-left: 1px solid #333;border-right: 1px solid #333;" width="50%" colspan="2"><b>'.$client_detail->company.'</b></th>
+        <th style="border-right: 1px solid #333;border-left: 1px solid #333;" width="50%" colspan="2"><b>'.$client_details2->company.'</b></th>
+        </tr>';
+        
+        if(is_null($client_detail->address3)){
+            
+			}else{
+			$html .= '<tr>
+			<th style="border-left: 1px solid #333;border-right: 1px solid #333;" width="50%" colspan="2">'.$client_detail->address3.'</th>
+			<th style="border-right: 1px solid #333;border-left: 1px solid #333;" width="50%" colspan="2"></th>
+			</tr>';
+		}
+        
+        $html .= '<tr>
+        <th style="border-left: 1px solid #333;border-right: 1px solid #333;" width="50%" colspan="2">'.$client_detail->VendorAddress.'</th>
+        <th style="border-right: 1px solid #333;border-left: 1px solid #333;" width="50%" colspan="2">'.$deliveryAdd.'</th>
+        </tr>';
+        
+        $city_name = get_city_by_id($client_detail->city);
+        if(empty($city_name)){
+            $new_city_name = $client_detail->city;
+			}else {
+            $new_city_name = $city_name->city_name;
+		}
+        
+        $city_name2 = get_city_by_id($client_details2->city);
+        if(empty($city_name2)){
+            $new_city_name2 = $client_details2->city;
+			}else {
+            $new_city_name2 = $city_name2->city_name;
+		}
+        
+        $html .= '<tr>
+        <th style="border-left: 1px solid #333;border-right: 1px solid #333;" width="50%" colspan="2"></th>
+        <th style="border-right: 1px solid #333;border-left: 1px solid #333;" width="50%" colspan="2"></th>
+        </tr>';
+        
+        $html .= '<tr>
+        <th style="border-left: 1px solid #333;border-right: 1px solid #333;" width="50%" colspan="2">GSTIN  <b>'.$client_detail->vat.'</b></th>
+        <th style="border-right: 1px solid #333;border-left: 1px solid #333;" width="50%" colspan="2"><b></b></th>
+        </tr>';
+        if($client_detail->phonenumber == ""){
+            $Mobile = $client_detail->cmobile;
+			}else{
+            $Mobile = $client_detail->phonenumber;
+		}
+        if($client_details2->phonenumber == ""){
+            $Mobile2 = $client_details2->cmobile;
+			}else{
+            $Mobile2 = $client_details2->phonenumber;
+		}
+        $html .= '<tr>
+        <th style="border-left: 1px solid #333;border-right: 1px solid #333;" width="50%" colspan="2">Mobile No  <b>'.$Mobile.'</b></th>
+        <th style="border-right: 1px solid #333;border-left: 1px solid #333;" width="50%" colspan="2"></th>
+        </tr>';
+        
+        $html .= '<tr>
+        <th style="border-left: 1px solid #333;border-right: 1px solid #333;border-bottom: 1px solid #333;" width="50%" colspan="2">Food Lic No  <b>'.$client_detail->FLNO1.'</b></th>
+        <th style="border-right: 1px solid #333;border-bottom: 1px solid #333;border-left: 1px solid #333;" width="50%" colspan="2"></th>
+        </tr>';
+        $rowspan = 'rowspan="2"';
+        $item_name_width = "28%";
+        $hsn_width = "7%";
+        $html .= '<tr>
+        <th width="3.6%" '.$rowspan.' style="text-align:center;"><b>Sr.No.</b></th>
+        <th width="'.$item_name_width.'" '.$rowspan.'><b>Name of Product</b></th>
+        <th width="'.$hsn_width.'" '.$rowspan.'><b>HSN Code</b></th>
+        <th width="6%" '.$rowspan.' style="text-align:center;"><b>Pack Qty</b></th>
+        <th width="9.5%" '.$rowspan.' style="text-align:center;"><b>Qty</b></th>
+        <th width="8%" '.$rowspan.' style="text-align:center;"><b>Rate</b></th>
+        <th width="8%" '.$rowspan.' style="text-align:center;"><b>Amount</b></th>
+        <th width="6%" '.$rowspan.' style="text-align:center;"><b>Disc Amount</b></th>
+        <th width="8%" '.$rowspan.' style="text-align:center;"><b>Taxable Amount</b></th>';
+		
+		$html .= '<th style="text-align:center;" width="6%"><b>GST</b></th>';
+		$html .= '<th style="text-align:center;" width="9%"><b>Total</b></th>';
+		//$html .= '<td '.$rowspan.' style="text-align:center;">Total Amt</td>';    
+		$html .= '</tr>';
+		$html .= '<tr>
+        
+        <th style="text-align:center;"><b>%</b></th>
+        <th style="text-align:center;"><b>Amount</b></th>
+        </tr>';
+        
+        $html .= '</thead>';
+        $html .= '<tbody>';
+        
+        
+		$inv_item = GetItemDetailsFrK1GatepassBYChallan($invoice->ChallanID);
+		$i = 1;
+		$total_item_count = count($inv_item);
+		
+		if($total_item_count <= 13 ){
+			$empty_height = 330;
+		}
+		
+		if($total_item_count > 13 && $total_item_count<=33){
+			$empty_height = 700;
+			$empty_height1 = 340;
+		}
+		if($total_item_count > 33 ){
+			$empty_height = 340;
+		}
+		
+		$qty = 0;
+		$units = 0;
+		$amt = 0;
+		$dis_amt = 0;
+		$taxable_amt_item = 0;
+		$order_total = 0;
+		foreach ($inv_item as $item) {
+			$hsn_code = get_prod_hsn_byitem_id($item['ItemID']);
+			if($total_item_count <= 13 ){
+				$empty_height = $empty_height - 23;
+			}
+			if($total_item_count > 13 && $total_item_count<=33){
+				$empty_height = $empty_height - 22;
+			}
+			if($total_item_count > 13 && $total_item_count<=33 && $i > 33){
+				$empty_height1 = $empty_height1 - 22;
+			}
+			if($total_item_count > 33 && $i > 33){
+				$empty_height = $empty_height - 22;
+			}
+			$html .= '<tr>'; 
+			$html .= '<td width="3.6%" style="text-align:center;">'.$i.'</td>'; 
+			$html .= '<td width="'.$item_name_width.'" class="description" align="left;" width="'.$item_name_width.'"><b>'.$item['ProductName'].'</b></td>';
+			$html .= '<td width="'.$hsn_width.'" style="text-align:center;"><b>'.$hsn_code->hsn_code.'</b></td>';
+			$html .= '<td width="6%" style="text-align:right;"><b>'. (int) $item['CaseQty'].'</b></td>';
+			
+			$html .= '<td width="9.5%" style="text-align:right;"><b>'. (int) $item['OrderQty'].'</b></td>';
+			$units = $units + $item['OrderQty'];
+            $qty = $qty + (int) $item['CaseQty'];
+			$html .= '<td width="8%" style="text-align:right;"><b>'.number_format($item['BasicRate'], 2, '.', '').'</b></td>';
+			$html .= '<td width="8%" style="text-align:right;"><b>'.$item['ChallanAmt'].'</b></td>';
+			$amt = $amt + $item['ChallanAmt'];
+			$html .= '<td width="6%" style="text-align:right;"><b>'.round($item['DiscAmt'],2) .'</b></td>';
+			$dis_amt = $dis_amt + $item['DiscAmt'];
+			$html .= '<td width="8%" style="text-align:right;"><b>'.number_format(($item['ChallanAmt'] - $item['DiscAmt']), 2, '.', '').'</b></td>';
+			
+			$taxable_amt_item = $taxable_amt_item + ($item['ChallanAmt'] - $item['DiscAmt']);
+			
+			if($client_detail->state == "MH"){
+				$gst_rate = $item['cgst'] + $item['sgst'];
+				$gst_rate = $gst_rate.".00";
+				$scgst = $item['cgstamt'] * 2;
+				$gst_total = $gst_total + $scgst;
+				}else {
+				$gst_rate = $item['igst'];
+				$gst_total = $gst_total + $item['igstamt'];
+			}
+			
+			
+			
+			$html .= '<td width="6%" style="text-align:center;"><b>'.$gst_rate.'</b></td>';
+			$html .= '<td width="9%" style="text-align:right;"><b>'.$item['NetChallanAmt'].'</b></td>';
+			$order_total = $order_total + $item['NetChallanAmt'];
+			$html .= '</tr>';
+			
+			$i++;
+		}
+		$amt = (double) $amt;
+		
+		if(!empty($inv_item)){
+			$html .='<tr>';
+			$html .='<td colspan="2" style="text-align:center;"><b>Total</b></td>'; 
+			$html .='<td style="text-align:center;"></td>';
+			$html .='<td style="text-align:right;"><b>'.$qty.'</b></td>';
+			$html .='<td style="text-align:right;"><b>'.$units.'</b></td>';
+			$html .='<td></td>';
+			$html .='<td style="text-align:right;"><b>'.number_format($amt, 2, '.', '').'</b></td>';
+			$html .='<td style="text-align:right;"><b>'.round($dis_amt,2).'</b></td>';
+			$html .='<td style="text-align:right;"><b>'.number_format($taxable_amt_item, 2, '.', '').'</b></td>';
+			
+			$html .='<td style="text-align:center;"><b></b></td>'; 
+			$html .='<td style="text-align:right;"><b>'.number_format($order_total, 2, '.', '').'</b></td>';
+			$html .='</tr>';
+		}
+		
+		//if($total_item_count > 17 && $total_item_count <=33){
+        $html .='<tr><td colspan="12" width="99.1%" height="'.$empty_height.'px"></td></tr>';
+        if($total_item_count > 13 && $total_item_count<=33){
+			$html .='<tr><td colspan="12" height="'.$empty_height1.'px"></td></tr>';
+		}
+		
+		
+        $html .= '</tbody>';
+        
+        $html .= '<tfoot style="width:100%;position:fixed !important;bottom:0 !important">';
+		
+		$html .='<tr>
+		<td colspan="2" width="20%" style="text-align:center;"><b>GST Breakup</b></td>
+		<td width="6%" style="text-align:center;"><b>GST %'.'</b></td>
+		<td width="13.2%" style="text-align:center;"><b>Taxable Amt</b></td>
+		<td width="7%" style="text-align:center;"><b>CGST %</b></td>
+		<td width="9%" style="text-align:center;"><b>CGST Amt</b></td>
+		<td width="7%" style="text-align:center;"><b>SGST %</b></td>
+		<td width="9%" style="text-align:center;"><b>SGST Amt</b></td>
+		<td width="6%" style="text-align:center;"><b>IGST %</b></td>
+		<td width="8%" style="text-align:center;"><b>IGST Amt</b></td>
+		<td width="9%" style="text-align:center;"><b>GST Amt</b></td>
+		<td width="5%" style="text-align:center;"><b>Item </b></td>
+		
+		</tr>';
+		
+		if($client_detail->state == "MH"){
+			$gst_detail = get_k1gst_details($order_detail["OrderID"]);
+			
+			$gst_count = count($gst_detail);
+			$bill_gst_total = 0.00;
+			$i = 0;
+			if($gst_count == "1"){
+				$gst_brk_after_space_h = 22;
+				}if($gst_count == "2"){
+				$gst_brk_after_space_h = 0;
+			}
+			if($gst_count == "3"){
+				$gst_brk_after_space_h = 0;
+			}
+			foreach ($gst_detail as $gvalue) {
+                # code...
+                
+                $html .='<tr>';
+                if($i == 0){
+                    $html .='<td rowspan="'.$gst_count.'" colspan="2" width="20%"></td>';
+				}
+                $gst_per = $gvalue["cgst"] * 2;
+                $gst_per = $gst_per;
+                $taxable_amt = get_k1gst_taxable_amt($order_detail["OrderID"],$gvalue["cgst"]);
+                $cs_gst_amt = get_k1gst_amt($order_detail["OrderID"],$gvalue["cgst"]);
+                $gst_total_amt = $cs_gst_amt * 2;
+                $item_count = get_k1gst_item_count($order_detail["OrderID"],$gvalue["cgst"]);
+                $item_count_new = count($item_count);
+                $html .='<td width="6%" style="text-align:center;"><b>'.$gst_per.'.00</b></td>
+                <td width="13.2%" style="text-align:center;"><b>'.number_format($taxable_amt, 2, '.', '').'</b></td>
+                <td width="7%" style="text-align:center;"><b>'.number_format($gvalue["cgst"], 2, '.', '').'</b></td>
+                <td width="9%" style="text-align:center;"><b>'.number_format($cs_gst_amt, 2, '.', '').'</b></td>
+                <td width="7%" style="text-align:center;"><b>'.number_format($gvalue["cgst"], 2, '.', '').'</b></td>
+                <td width="9%" style="text-align:center;"><b>'.number_format($cs_gst_amt, 2, '.', '').'</b></td>
+                <td width="6%" style="text-align:center;"></td>
+                <td width="8%" style="text-align:center;"></td>
+                <td width="9%" style="text-align:center;"><b>'. number_format($gst_total_amt, 2, '.', '').'</b></td>
+                <td width="5%" style="text-align:center;"><b>'.$item_count_new .'</b></td>
+                
+                </tr>';
+                $bill_gst_total = $bill_gst_total + $gst_total_amt;
+				$i++;
+			}
+			}else {
+            
+            
+            
+            $igst_detail = get_k1igst_details($order_detail["OrderID"]);
+			
+            $igst_count = count($igst_detail);
+            $i = 0;
+            
+			foreach ($igst_detail as $igvalue) {
+                # code...
+                
+                $html .='<tr>';
+                if($i == 0){
+                    $html .='<td rowspan="'.$igst_count.'" colspan="2" width="20%"></td>';
+				}
+                $igst_per = $igvalue["igst"];
+                $igst_per = $igst_per;
+                $taxable_amt = get_k1igst_taxable_amt($order_detail["OrderID"],$igvalue["igst"]);
+                $i_gst_amt = get_k1igst_amt($order_detail["OrderID"],$igvalue["igst"]);
+                $i_item_count = get_k1igst_item_count($order_detail["OrderID"],$igvalue["igst"]);
+                $i_item_count_new = count($i_item_count);
+                $html .='<td width="6%" style="text-align:center;"><b>'.$igst_per.'</b></td>
+                <td width="13.2%" style="text-align:center;"><b>'.number_format($taxable_amt, 2, '.', '').'</b></td>
+                <td width="7%" style="text-align:center;"></td>
+                <td width="9%" style="text-align:center;"></td>
+                <td width="7%" style="text-align:center;"></td>
+                <td width="9%" style="text-align:center;"></td>
+                <td width="6%" style="text-align:center;"><b>'.$igvalue["igst"].'</b></td>
+                <td width="8%" style="text-align:center;"><b>'. number_format($i_gst_amt, 2, '.', '').'</b></td>
+                <td width="9%" style="text-align:center;"><b>'. number_format($i_gst_amt, 2, '.', '').'</b></td>
+                <td width="5%" style="text-align:center;"><b>'.$i_item_count_new.'</b></td>
+                
+                </tr>';
+                $bill_gst_total = $bill_gst_total + $i_gst_amt;
+				$i++;
+			}  
+		}
+        if($gst_count>1){}else{
+            $html .='<tr><td colspan="12" style="height:'.$gst_brk_after_space_h.'px;"></td></tr>';
+		}
+        
+        
+		$html .='<tr>'; 
+		$html .='<td colspan="8" style="border-right:none;" width="60%"></td>';
+		
+		
+		$html .='<td colspan="3" width="25%"><b>Taxable Value/ Amt</b></td>';
+		$html .='<td  style="text-align:right;" width="14.3%"><b>'. number_format($taxable_amt_item, 2, '.', '').'</b></td>';
+		$html .='</tr>'; 
+		
+		
+		$html .='<tr>'; 
+		if($client_detail->state == "MH"){
+			$bank_rowspan='rowspan="6"';
+			}else {
+			$bank_rowspan='rowspan="5"';
+		}
+		if($PlantID == "1"){
+			$BankMsg = '<b>Bank A/c Details - KIRTI AGRI SOLUTION PVT LTD.<br>1. STATE BANK OF INDIA - A/C - 00000000000, IFSC-SBIN0000086, Bank Road, PUNE <br>2. PUNJAB NATIONAL BANK - A/C - 000000000000000, IFSC-PUNB0187500, Jubilee Road, PUNE<br>3. UPI Details - 0000000000@kotak</b>';
+			}else{
+			$BankMsg = '';
+		}
+		$html .='<td colspan="8" '.$bank_rowspan.'>'.$BankMsg.'</td>';
+		if($client_detail->state == "MH"){
+			$html .='<td colspan="3"><b>Add CGST</b></td>';
+			$grand_csgst = $gst_total / 2;
+			$html .='<td '.$colspan_taxable_amt.' style="text-align:right;"><b>'.number_format($bill_gst_total / 2, 2, '.', '').'</b></td>';
+			}else {
+			$html .='<td colspan="3"><b>Add IGST</b></td>';
+			$html .='<td '.$colspan_taxable_amt.' style="text-align:right;"><b>'.number_format($bill_gst_total, 2, '.', '').'</b></td>';
+		}
+		
+		$html .='</tr>'; 
+		
+		if($client_detail->state == "MH"){
+			$html .='<tr>'; 
+			$html .='<td colspan="3"><b>Add SGST</b></td>';
+			$html .='<td '.$colspan_taxable_amt.' style="text-align:right;"><b>'.number_format($bill_gst_total /2, 2, '.', '').'</b></td>';
+			$html .='</tr>'; 
+		}
+		$sale_data = get_k1_is_tcs($sales_detail->SalesID);
+		// print_r($sales_detail->SalesID);die;
+		$html .='<tr>'; 
+		$html .='<td colspan="3"><b>Add TCS @ '.round($sale_data->tcs,2).'%</b></td>';
+		$html .='<td '.$colspan_taxable_amt.' style="text-align:right;"><b>'.number_format($sale_data->tcsAmt, 2, '.', '').'</b></td>';
+		$html .='</tr>'; 
+		$html .='<tr>'; 
+		$html .='<td colspan="3"><b>Amount after GST + TCS</b></td>';
+		$tcs_amt = $sale_data->tcsAmt;
+		$inc_tcs_amt = $order_total + $tcs_amt;
+		$html .='<td '.$colspan_taxable_amt.' style="text-align:right;"><b>'.number_format(round($sale_data->BillAmt), 2, '.', '').'</b></td>';
+		$html .='</tr>'; 
+		
+		$html .='<tr>'; 
+		$html .='<td colspan="3"><b>Previous Balance</b></td>';
+		$html .='<td '.$colspan_taxable_amt.'></td>';
+		$html .='</tr>';
+		$html .='<tr>'; 
+		$html .='<td colspan="3"><b>Balance Amt (Rnd)</b></td>';
+		$html .='<td '.$colspan_taxable_amt.' style="text-align:right;"></td>';
+		$html .='</tr>';
+		$html .='<tr>'; 
+		
+		$src= 'https://chart.googleapis.com/chart?chs=115x115&cht=qr&chl='.$sales_detail->Qrcode.'&choe=UTF-8';
+		$html .='<td colspan="8">';
+		if($sales_detail->irn !== null){
+			$html .='<img src="'.$src.'" title="Link to Google.com" /><br><b>IRN '.$sales_detail->irn.'</b>';
+		}
+		$html .='</td>';
+		$html .='<td colspan="4">For<b> '.$PlantDetail->FIRMNAME.'<br><br><br><br><br><br><br>Authorized Signatory</b></td>';
+		$html .='</tr>';
+		
+        $html .= '</tfoot>';
+        $html .= '</table>';
+        //$html .= '</div>';
+		//$pdf->AddPage();
+	}
+	foreach ($get_order_list as $key => $order_detail) {
+		
+        $client_detail = get_client_detail($order_detail["AccountID"]);
+        $client_details2 = get_client_detail($order_detail["AccountID"]);
+        $FY = $order_detail["FY"];
+        $PlantDetail = GetPlantDetails($order_detail["PlantID"],$order_detail["FY"]);
+        $gst_type = get_gst_type();
+        $sales_detail = K1get_sales_details($invoice->ChallanID,$order_detail["OrderID"]);
+		// print_r($sales_detail);die;
+		if(!empty($sales_detail->ShippingID)){
+		$addressdata = K1get_shipping_details($sales_detail->ShippingID);
+		$deliveryAdd = $addressdata->address;
+		}else{
+		$deliveryAdd = 'Pickup';
+		}
+        $PlantID = $sales_detail->PlantID;
+        $state_detail = get_state_detail($client_detail->state);
+        $billing_state_detail = get_state_detail($client_detail->billing_state);
+        $shipping_state_detail = get_state_detail($client_detail->shipping_state);
+        
+        $qty = 0;
+        $amt = 0;
+        $dis_amt = 0;
+        $taxable_amt_item = 0;
+        $order_total = 0;
+        
+        $title = "";
+        // if($order_detail["OrderType"] == "TaxItems"){
+		// }
+            $title = "INVOICE (DUPLICATE FOR TRANSPORTER)";
+        // if($order_detail["OrderType"] == "NonTaxItems"){
+            // $title = "BILL OF SUPPLY";
+		// }
+        $pdf->Ln(hooks()->apply_filters('pdf_info_and_table_separator', 1));
+        //$html .= '<div class="page-break-after: always;">';
+        $html .= '<table style="width: 100%; font-size:12px;font-weight:400;" cellspacing="1" cellpadding="3" border="1" >';
+		
+        $html .= '<thead>';
+        $html .= '<tr >
+        <th colspan="4" style="border: 1px solid #333;"><p style="text-align:center;font-size:14px;"><b>'.$title.'</b><br><b>'.$PlantDetail->FIRMNAME.'</b><br><b>'.$PlantDetail->ADDRESS1.' '.$PlantDetail->ADDRESS2.'<br></b><b>GSTIN '.$PlantDetail->GSTNO.', <i>fssai</i> Lic.no '.$PlantDetail->FLNO1.' </b><br><b>Contact No. : '.$PlantDetail->PHONENO.'</b></p></th>
+        </tr>';
+        $html .= '<tr>
+        <th style="border-left: 1px solid #333;" width="20%">Invoice No.</th>
+        <th style="border-right: 1px solid #333;" width="30%"><b>'.$sales_detail->SalesID.'</b></th>
+        <th width="20%" style="border-left: 1px solid #333;">Ack No.</th>
+        <th style="border-right: 1px solid #333;" width="30%"><b></b></th>
+        </tr>';
+        
+        $html .= '<tr>
+        <th style="border-left: 1px solid #333;" width="20%">Invoice Date</th>
+        <th style="border-right: 1px solid #333;" width="30%"><b>'. substr($sales_detail->Transdate,0,10) .'</b></th>
+        <th width="20%" style="border-left: 1px solid #333;">Ack Date</th>
+        <th style="border-right: 1px solid #333;" width="30%"><b></b></th>
+        </tr>';
+        
+        $html .= '<tr>
+        <th style="border-left: 1px solid #333;" width="20%">Challan No</th>
+        <th style="border-right: 1px solid #333;" width="30%"><b>'. $invoice->ChallanID .'</b></th>
+        <th width="20%" style="border-left: 1px solid #333;">Vehicle No</th>
+        <th style="border-right: 1px solid #333;" width="30%"><b>'.$invoice->VehicleID.'</b></th>
+        </tr>';
+        
+        $html .= '<tr>
+        <th style="border-left: 1px solid #333;border-bottom: 1px solid #333;" width="20%">Order No</th>
+        <th style="border-right: 1px solid #333;border-bottom: 1px solid #333;" width="30%"><b>'. $order_detail["OrderID"] .'</b></th>
+        <th width="20%" style="border-bottom: 1px solid #333;border-left: 1px solid #333;">eWayBillNo</th>
+        <th style="border-right: 1px solid #333;border-bottom: 1px solid #333;" width="30%"><b></b></th>
+        </tr>';
+        
+        $html .= '<tr>
+        <th style="border-left: 1px solid #333;border-right: 1px solid #333;" width="50%" colspan="2"><b>Bill To</b></th>
+        <th style="border-right: 1px solid #333;border-left: 1px solid #333;" width="50%" colspan="2"><b>Ship To</b></th>
+        </tr>';
+        
+        $html .= '<tr>
+        <th style="border-left: 1px solid #333;border-right: 1px solid #333;" width="50%" colspan="2"><b>'.$client_detail->company.'</b></th>
+        <th style="border-right: 1px solid #333;border-left: 1px solid #333;" width="50%" colspan="2"><b>'.$client_details2->company.'</b></th>
+        </tr>';
+        
+        if(is_null($client_detail->address3)){
+            
+			}else{
+			$html .= '<tr>
+			<th style="border-left: 1px solid #333;border-right: 1px solid #333;" width="50%" colspan="2">'.$client_detail->address3.'</th>
+			<th style="border-right: 1px solid #333;border-left: 1px solid #333;" width="50%" colspan="2"></th>
+			</tr>';
+		}
+        
+         $html .= '<tr>
+        <th style="border-left: 1px solid #333;border-right: 1px solid #333;" width="50%" colspan="2">'.$client_detail->VendorAddress.'</th>
+        <th style="border-right: 1px solid #333;border-left: 1px solid #333;" width="50%" colspan="2">'.$deliveryAdd.'</th>
+        </tr>';
+        
+        $city_name = get_city_by_id($client_detail->city);
+        if(empty($city_name)){
+            $new_city_name = $client_detail->city;
+			}else {
+            $new_city_name = $city_name->city_name;
+		}
+        
+        $city_name2 = get_city_by_id($client_details2->city);
+        if(empty($city_name2)){
+            $new_city_name2 = $client_details2->city;
+			}else {
+            $new_city_name2 = $city_name2->city_name;
+		}
+        
+        $html .= '<tr>
+        <th style="border-left: 1px solid #333;border-right: 1px solid #333;" width="50%" colspan="2"></th>
+        <th style="border-right: 1px solid #333;border-left: 1px solid #333;" width="50%" colspan="2"></th>
+        </tr>';
+        
+        $html .= '<tr>
+        <th style="border-left: 1px solid #333;border-right: 1px solid #333;" width="50%" colspan="2">GSTIN  <b>'.$client_detail->vat.'</b></th>
+        <th style="border-right: 1px solid #333;border-left: 1px solid #333;" width="50%" colspan="2"><b></b></th>
+        </tr>';
+        if($client_detail->phonenumber == ""){
+            $Mobile = $client_detail->cmobile;
+			}else{
+            $Mobile = $client_detail->phonenumber;
+		}
+        if($client_details2->phonenumber == ""){
+            $Mobile2 = $client_details2->cmobile;
+			}else{
+            $Mobile2 = $client_details2->phonenumber;
+		}
+        $html .= '<tr>
+        <th style="border-left: 1px solid #333;border-right: 1px solid #333;" width="50%" colspan="2">Mobile No  <b>'.$Mobile.'</b></th>
+        <th style="border-right: 1px solid #333;border-left: 1px solid #333;" width="50%" colspan="2"></th>
+        </tr>';
+        
+        $html .= '<tr>
+        <th style="border-left: 1px solid #333;border-right: 1px solid #333;border-bottom: 1px solid #333;" width="50%" colspan="2">Food Lic No  <b>'.$client_detail->FLNO1.'</b></th>
+        <th style="border-right: 1px solid #333;border-bottom: 1px solid #333;border-left: 1px solid #333;" width="50%" colspan="2"></th>
+        </tr>';
+        $rowspan = 'rowspan="2"';
+        $item_name_width = "28%";
+        $hsn_width = "7%";
+        $html .= '<tr>
+        <th width="3.6%" '.$rowspan.' style="text-align:center;"><b>Sr.No.</b></th>
+        <th width="'.$item_name_width.'" '.$rowspan.'><b>Name of Product</b></th>
+        <th width="'.$hsn_width.'" '.$rowspan.'><b>HSN Code</b></th>
+        <th width="6%" '.$rowspan.' style="text-align:center;"><b>Pack Qty</b></th>
+        <th width="9.5%" '.$rowspan.' style="text-align:center;"><b>Qty</b></th>
+        <th width="8%" '.$rowspan.' style="text-align:center;"><b>Rate</b></th>
+        <th width="8%" '.$rowspan.' style="text-align:center;"><b>Amount</b></th>
+        <th width="6%" '.$rowspan.' style="text-align:center;"><b>Disc Amount</b></th>
+        <th width="8%" '.$rowspan.' style="text-align:center;"><b>Taxable Amount</b></th>';
+		
+		$html .= '<th style="text-align:center;" width="6%"><b>GST</b></th>';
+		$html .= '<th style="text-align:center;" width="9%"><b>Total</b></th>';
+		//$html .= '<td '.$rowspan.' style="text-align:center;">Total Amt</td>';    
+		$html .= '</tr>';
+		$html .= '<tr>
+        
+        <th style="text-align:center;"><b>%</b></th>
+        <th style="text-align:center;"><b>Amount</b></th>
+        </tr>';
+        
+        $html .= '</thead>';
+        $html .= '<tbody>';
+        
+        
+		$inv_item = GetItemDetailsFrK1GatepassBYChallan($invoice->ChallanID);
+		$i = 1;
+		$total_item_count = count($inv_item);
+		
+		if($total_item_count <= 13 ){
+			$empty_height = 330;
+		}
+		
+		if($total_item_count > 13 && $total_item_count<=33){
+			$empty_height = 700;
+			$empty_height1 = 340;
+		}
+		if($total_item_count > 33 ){
+			$empty_height = 340;
+		}
+		
+		$qty = 0;
+		$units = 0;
+		$amt = 0;
+		$dis_amt = 0;
+		$taxable_amt_item = 0;
+		$order_total = 0;
+		foreach ($inv_item as $item) {
+			$hsn_code = get_prod_hsn_byitem_id($item['ItemID']);
+			if($total_item_count <= 13 ){
+				$empty_height = $empty_height - 23;
+			}
+			if($total_item_count > 13 && $total_item_count<=33){
+				$empty_height = $empty_height - 22;
+			}
+			if($total_item_count > 13 && $total_item_count<=33 && $i > 33){
+				$empty_height1 = $empty_height1 - 22;
+			}
+			if($total_item_count > 33 && $i > 33){
+				$empty_height = $empty_height - 22;
+			}
+			$html .= '<tr>'; 
+			$html .= '<td width="3.6%" style="text-align:center;">'.$i.'</td>'; 
+			$html .= '<td width="'.$item_name_width.'" class="description" align="left;" width="'.$item_name_width.'"><b>'.$item['ProductName'].'</b></td>';
+			$html .= '<td width="'.$hsn_width.'" style="text-align:center;"><b>'.$hsn_code->hsn_code.'</b></td>';
+			$html .= '<td width="6%" style="text-align:right;"><b>'. (int) $item['CaseQty'].'</b></td>';
+			
+			$html .= '<td width="9.5%" style="text-align:right;"><b>'. (int) $item['OrderQty'].'</b></td>';
+			$units = $units + $item['OrderQty'];
+            $qty = $qty + (int) $item['CaseQty'];
+			$html .= '<td width="8%" style="text-align:right;"><b>'.number_format($item['BasicRate'], 2, '.', '').'</b></td>';
+			$html .= '<td width="8%" style="text-align:right;"><b>'.$item['ChallanAmt'].'</b></td>';
+			$amt = $amt + $item['ChallanAmt'];
+			$html .= '<td width="6%" style="text-align:right;"><b>'.round($item['DiscAmt'],2) .'</b></td>';
+			$dis_amt = $dis_amt + $item['DiscAmt'];
+			$html .= '<td width="8%" style="text-align:right;"><b>'.number_format(($item['ChallanAmt'] - $item['DiscAmt']), 2, '.', '').'</b></td>';
+			
+			$taxable_amt_item = $taxable_amt_item + ($item['ChallanAmt'] - $item['DiscAmt']);
+			
+			if($client_detail->state == "MH"){
+				$gst_rate = $item['cgst'] + $item['sgst'];
+				$gst_rate = $gst_rate.".00";
+				$scgst = $item['cgstamt'] * 2;
+				$gst_total = $gst_total + $scgst;
+				}else {
+				$gst_rate = $item['igst'];
+				$gst_total = $gst_total + $item['igstamt'];
+			}
+			
+			
+			
+			$html .= '<td width="6%" style="text-align:center;"><b>'.$gst_rate.'</b></td>';
+			$html .= '<td width="9%" style="text-align:right;"><b>'.$item['NetChallanAmt'].'</b></td>';
+			$order_total = $order_total + $item['NetChallanAmt'];
+			$html .= '</tr>';
+			
+			$i++;
+		}
+		$amt = (double) $amt;
+		
+		if(!empty($inv_item)){
+			$html .='<tr>';
+			$html .='<td colspan="2" style="text-align:center;"><b>Total</b></td>'; 
+			$html .='<td style="text-align:center;"></td>';
+			$html .='<td style="text-align:right;"><b>'.$qty.'</b></td>';
+			$html .='<td style="text-align:right;"><b>'.$units.'</b></td>';
+			$html .='<td></td>';
+			$html .='<td style="text-align:right;"><b>'.number_format($amt, 2, '.', '').'</b></td>';
+			$html .='<td style="text-align:right;"><b>'.round($dis_amt,2).'</b></td>';
+			$html .='<td style="text-align:right;"><b>'.number_format($taxable_amt_item, 2, '.', '').'</b></td>';
+			
+			$html .='<td style="text-align:center;"><b></b></td>'; 
+			$html .='<td style="text-align:right;"><b>'.number_format($order_total, 2, '.', '').'</b></td>';
+			$html .='</tr>';
+		}
+		
+		//if($total_item_count > 17 && $total_item_count <=33){
+        $html .='<tr><td colspan="12" width="99.1%" height="'.$empty_height.'px"></td></tr>';
+        if($total_item_count > 13 && $total_item_count<=33){
+			$html .='<tr><td colspan="12" height="'.$empty_height1.'px"></td></tr>';
+		}
+		
+		
+        $html .= '</tbody>';
+        
+        $html .= '<tfoot style="width:100%;position:fixed !important;bottom:0 !important">';
+		
+		$html .='<tr>
+		<td colspan="2" width="20%" style="text-align:center;"><b>GST Breakup</b></td>
+		<td width="6%" style="text-align:center;"><b>GST %'.'</b></td>
+		<td width="13.2%" style="text-align:center;"><b>Taxable Amt</b></td>
+		<td width="7%" style="text-align:center;"><b>CGST %</b></td>
+		<td width="9%" style="text-align:center;"><b>CGST Amt</b></td>
+		<td width="7%" style="text-align:center;"><b>SGST %</b></td>
+		<td width="9%" style="text-align:center;"><b>SGST Amt</b></td>
+		<td width="6%" style="text-align:center;"><b>IGST %</b></td>
+		<td width="8%" style="text-align:center;"><b>IGST Amt</b></td>
+		<td width="9%" style="text-align:center;"><b>GST Amt</b></td>
+		<td width="5%" style="text-align:center;"><b>Item </b></td>
+		
+		</tr>';
+		
+		if($client_detail->state == "MH"){
+			$gst_detail = get_k1gst_details($order_detail["OrderID"]);
+			
+			$gst_count = count($gst_detail);
+			$bill_gst_total = 0.00;
+			$i = 0;
+			if($gst_count == "1"){
+				$gst_brk_after_space_h = 22;
+				}if($gst_count == "2"){
+				$gst_brk_after_space_h = 0;
+			}
+			if($gst_count == "3"){
+				$gst_brk_after_space_h = 0;
+			}
+			foreach ($gst_detail as $gvalue) {
+                # code...
+                
+                $html .='<tr>';
+                if($i == 0){
+                    $html .='<td rowspan="'.$gst_count.'" colspan="2" width="20%"></td>';
+				}
+                $gst_per = $gvalue["cgst"] * 2;
+                $gst_per = $gst_per;
+                $taxable_amt = get_k1gst_taxable_amt($order_detail["OrderID"],$gvalue["cgst"]);
+                $cs_gst_amt = get_k1gst_amt($order_detail["OrderID"],$gvalue["cgst"]);
+                $gst_total_amt = $cs_gst_amt * 2;
+                $item_count = get_k1gst_item_count($order_detail["OrderID"],$gvalue["cgst"]);
+                $item_count_new = count($item_count);
+                $html .='<td width="6%" style="text-align:center;"><b>'.$gst_per.'.00</b></td>
+                <td width="13.2%" style="text-align:center;"><b>'.number_format($taxable_amt, 2, '.', '').'</b></td>
+                <td width="7%" style="text-align:center;"><b>'.number_format($gvalue["cgst"], 2, '.', '').'</b></td>
+                <td width="9%" style="text-align:center;"><b>'.number_format($cs_gst_amt, 2, '.', '').'</b></td>
+                <td width="7%" style="text-align:center;"><b>'.number_format($gvalue["cgst"], 2, '.', '').'</b></td>
+                <td width="9%" style="text-align:center;"><b>'.number_format($cs_gst_amt, 2, '.', '').'</b></td>
+                <td width="6%" style="text-align:center;"></td>
+                <td width="8%" style="text-align:center;"></td>
+                <td width="9%" style="text-align:center;"><b>'. number_format($gst_total_amt, 2, '.', '').'</b></td>
+                <td width="5%" style="text-align:center;"><b>'.$item_count_new .'</b></td>
+                
+                </tr>';
+                $bill_gst_total = $bill_gst_total + $gst_total_amt;
+				$i++;
+			}
+			}else {
+            
+            
+            
+            $igst_detail = get_k1igst_details($order_detail["OrderID"]);
+			
+            $igst_count = count($igst_detail);
+            $i = 0;
+            
+			foreach ($igst_detail as $igvalue) {
+                # code...
+                
+                $html .='<tr>';
+                if($i == 0){
+                    $html .='<td rowspan="'.$igst_count.'" colspan="2" width="20%"></td>';
+				}
+                $igst_per = $igvalue["igst"];
+                $igst_per = $igst_per;
+                $taxable_amt = get_k1igst_taxable_amt($order_detail["OrderID"],$igvalue["igst"]);
+                $i_gst_amt = get_k1igst_amt($order_detail["OrderID"],$igvalue["igst"]);
+                $i_item_count = get_k1igst_item_count($order_detail["OrderID"],$igvalue["igst"]);
+                $i_item_count_new = count($i_item_count);
+                $html .='<td width="6%" style="text-align:center;"><b>'.$igst_per.'</b></td>
+                <td width="13.2%" style="text-align:center;"><b>'.number_format($taxable_amt, 2, '.', '').'</b></td>
+                <td width="7%" style="text-align:center;"></td>
+                <td width="9%" style="text-align:center;"></td>
+                <td width="7%" style="text-align:center;"></td>
+                <td width="9%" style="text-align:center;"></td>
+                <td width="6%" style="text-align:center;"><b>'.$igvalue["igst"].'</b></td>
+                <td width="8%" style="text-align:center;"><b>'. number_format($i_gst_amt, 2, '.', '').'</b></td>
+                <td width="9%" style="text-align:center;"><b>'. number_format($i_gst_amt, 2, '.', '').'</b></td>
+                <td width="5%" style="text-align:center;"><b>'.$i_item_count_new.'</b></td>
+                
+                </tr>';
+                $bill_gst_total = $bill_gst_total + $i_gst_amt;
+				$i++;
+			}  
+		}
+        if($gst_count>1){}else{
+            $html .='<tr><td colspan="12" style="height:'.$gst_brk_after_space_h.'px;"></td></tr>';
+		}
+        
+        
+		$html .='<tr>'; 
+		$html .='<td colspan="8" style="border-right:none;" width="60%"></td>';
+		
+		
+		$html .='<td colspan="3" width="25%"><b>Taxable Value/ Amt</b></td>';
+		$html .='<td  style="text-align:right;" width="14.3%"><b>'. number_format($taxable_amt_item, 2, '.', '').'</b></td>';
+		$html .='</tr>'; 
+		
+		
+		$html .='<tr>'; 
+		if($client_detail->state == "MH"){
+			$bank_rowspan='rowspan="6"';
+			}else {
+			$bank_rowspan='rowspan="5"';
+		}
+		if($PlantID == "1"){
+			$BankMsg = '<b>Bank A/c Details - KIRTI AGRI SOLUTION PVT LTD.<br>1. STATE BANK OF INDIA - A/C - 00000000000, IFSC-SBIN0000086, Bank Road, PUNE <br>2. PUNJAB NATIONAL BANK - A/C - 000000000000000, IFSC-PUNB0187500, Jubilee Road, PUNE<br>3. UPI Details - 0000000000@kotak</b>';
+			}else{
+			$BankMsg = '';
+		}
+		$html .='<td colspan="8" '.$bank_rowspan.'>'.$BankMsg.'</td>';
+		if($client_detail->state == "MH"){
+			$html .='<td colspan="3"><b>Add CGST</b></td>';
+			$grand_csgst = $gst_total / 2;
+			$html .='<td '.$colspan_taxable_amt.' style="text-align:right;"><b>'.number_format($bill_gst_total / 2, 2, '.', '').'</b></td>';
+			}else {
+			$html .='<td colspan="3"><b>Add IGST</b></td>';
+			$html .='<td '.$colspan_taxable_amt.' style="text-align:right;"><b>'.number_format($bill_gst_total, 2, '.', '').'</b></td>';
+		}
+		
+		$html .='</tr>'; 
+		
+		if($client_detail->state == "MH"){
+			$html .='<tr>'; 
+			$html .='<td colspan="3"><b>Add SGST</b></td>';
+			$html .='<td '.$colspan_taxable_amt.' style="text-align:right;"><b>'.number_format($bill_gst_total /2, 2, '.', '').'</b></td>';
+			$html .='</tr>'; 
+		}
+		$sale_data = get_k1_is_tcs($sales_detail->SalesID);
+		// print_r($sales_detail->SalesID);die;
+		$html .='<tr>'; 
+		$html .='<td colspan="3"><b>Add TCS @ '.round($sale_data->tcs,2).'%</b></td>';
+		$html .='<td '.$colspan_taxable_amt.' style="text-align:right;"><b>'.number_format($sale_data->tcsAmt, 2, '.', '').'</b></td>';
+		$html .='</tr>'; 
+		$html .='<tr>'; 
+		$html .='<td colspan="3"><b>Amount after GST + TCS</b></td>';
+		$tcs_amt = $sale_data->tcsAmt;
+		$inc_tcs_amt = $order_total + $tcs_amt;
+		$html .='<td '.$colspan_taxable_amt.' style="text-align:right;"><b>'.number_format(round($sale_data->BillAmt), 2, '.', '').'</b></td>';
+		$html .='</tr>'; 
+		
+		$html .='<tr>'; 
+		$html .='<td colspan="3"><b>Previous Balance</b></td>';
+		$html .='<td '.$colspan_taxable_amt.'></td>';
+		$html .='</tr>';
+		$html .='<tr>'; 
+		$html .='<td colspan="3"><b>Balance Amt (Rnd)</b></td>';
+		$html .='<td '.$colspan_taxable_amt.' style="text-align:right;"></td>';
+		$html .='</tr>';
+		$html .='<tr>'; 
+		
+		$src= 'https://chart.googleapis.com/chart?chs=115x115&cht=qr&chl='.$sales_detail->Qrcode.'&choe=UTF-8';
+		$html .='<td colspan="8">';
+		if($sales_detail->irn !== null){
+			$html .='<img src="'.$src.'" title="Link to Google.com" /><br><b>IRN '.$sales_detail->irn.'</b>';
+		}
+		$html .='</td>';
+		$html .='<td colspan="4">For<b> '.$PlantDetail->FIRMNAME.'<br><br><br><br><br><br><br>Authorized Signatory</b></td>';
+		$html .='</tr>';
+		
+        $html .= '</tfoot>';
+        $html .= '</table>';
+        //$html .= '</div>';
+		//$pdf->AddPage();
+	}
+	foreach ($get_order_list as $key => $order_detail) {
+		
+        $client_detail = get_client_detail($order_detail["AccountID"]);
+        $client_details2 = get_client_detail($order_detail["AccountID"]);
+        $FY = $order_detail["FY"];
+        $PlantDetail = GetPlantDetails($order_detail["PlantID"],$order_detail["FY"]);
+        $gst_type = get_gst_type();
+        $sales_detail = K1get_sales_details($invoice->ChallanID,$order_detail["OrderID"]);
+		// print_r($sales_detail);die;
+		if(!empty($sales_detail->ShippingID)){
+		$addressdata = K1get_shipping_details($sales_detail->ShippingID);
+		$deliveryAdd = $addressdata->address;
+		}else{
+		$deliveryAdd = 'Pickup';
+		}
+        $PlantID = $sales_detail->PlantID;
+        $state_detail = get_state_detail($client_detail->state);
+        $billing_state_detail = get_state_detail($client_detail->billing_state);
+        $shipping_state_detail = get_state_detail($client_detail->shipping_state);
+        
+        $qty = 0;
+        $amt = 0;
+        $dis_amt = 0;
+        $taxable_amt_item = 0;
+        $order_total = 0;
+        
+        $title = "";
+        // if($order_detail["OrderType"] == "TaxItems"){
+		// }
+            $title = "INVOICE (TRIPLICATE FOR SUPPLIER)";
+        // if($order_detail["OrderType"] == "NonTaxItems"){
+            // $title = "BILL OF SUPPLY";
+		// }
+        $pdf->Ln(hooks()->apply_filters('pdf_info_and_table_separator', 1));
+        //$html .= '<div class="page-break-after: always;">';
+        $html .= '<table style="width: 100%; font-size:12px;font-weight:400;" cellspacing="1" cellpadding="3" border="1" >';
+		
+        $html .= '<thead>';
+        $html .= '<tr >
+        <th colspan="4" style="border: 1px solid #333;"><p style="text-align:center;font-size:14px;"><b>'.$title.'</b><br><b>'.$PlantDetail->FIRMNAME.'</b><br><b>'.$PlantDetail->ADDRESS1.' '.$PlantDetail->ADDRESS2.'<br></b><b>GSTIN '.$PlantDetail->GSTNO.', <i>fssai</i> Lic.no '.$PlantDetail->FLNO1.' </b><br><b>Contact No. : '.$PlantDetail->PHONENO.'</b></p></th>
+        </tr>';
+        $html .= '<tr>
+        <th style="border-left: 1px solid #333;" width="20%">Invoice No.</th>
+        <th style="border-right: 1px solid #333;" width="30%"><b>'.$sales_detail->SalesID.'</b></th>
+        <th width="20%" style="border-left: 1px solid #333;">Ack No.</th>
+        <th style="border-right: 1px solid #333;" width="30%"><b></b></th>
+        </tr>';
+        
+        $html .= '<tr>
+        <th style="border-left: 1px solid #333;" width="20%">Invoice Date</th>
+        <th style="border-right: 1px solid #333;" width="30%"><b>'. substr($sales_detail->Transdate,0,10) .'</b></th>
+        <th width="20%" style="border-left: 1px solid #333;">Ack Date</th>
+        <th style="border-right: 1px solid #333;" width="30%"><b></b></th>
+        </tr>';
+        
+        $html .= '<tr>
+        <th style="border-left: 1px solid #333;" width="20%">Challan No</th>
+        <th style="border-right: 1px solid #333;" width="30%"><b>'. $invoice->ChallanID .'</b></th>
+        <th width="20%" style="border-left: 1px solid #333;">Vehicle No</th>
+        <th style="border-right: 1px solid #333;" width="30%"><b>'.$invoice->VehicleID.'</b></th>
+        </tr>';
+        
+        $html .= '<tr>
+        <th style="border-left: 1px solid #333;border-bottom: 1px solid #333;" width="20%">Order No</th>
+        <th style="border-right: 1px solid #333;border-bottom: 1px solid #333;" width="30%"><b>'. $order_detail["OrderID"] .'</b></th>
+        <th width="20%" style="border-bottom: 1px solid #333;border-left: 1px solid #333;">eWayBillNo</th>
+        <th style="border-right: 1px solid #333;border-bottom: 1px solid #333;" width="30%"><b></b></th>
+        </tr>';
+        
+        $html .= '<tr>
+        <th style="border-left: 1px solid #333;border-right: 1px solid #333;" width="50%" colspan="2"><b>Bill To</b></th>
+        <th style="border-right: 1px solid #333;border-left: 1px solid #333;" width="50%" colspan="2"><b>Ship To</b></th>
+        </tr>';
+        
+        $html .= '<tr>
+        <th style="border-left: 1px solid #333;border-right: 1px solid #333;" width="50%" colspan="2"><b>'.$client_detail->company.'</b></th>
+        <th style="border-right: 1px solid #333;border-left: 1px solid #333;" width="50%" colspan="2"><b>'.$client_details2->company.'</b></th>
+        </tr>';
+        
+        if(is_null($client_detail->address3)){
+            
+			}else{
+			$html .= '<tr>
+			<th style="border-left: 1px solid #333;border-right: 1px solid #333;" width="50%" colspan="2">'.$client_detail->address3.'</th>
+			<th style="border-right: 1px solid #333;border-left: 1px solid #333;" width="50%" colspan="2"></th>
+			</tr>';
+		}
+        
+        $html .= '<tr>
+        <th style="border-left: 1px solid #333;border-right: 1px solid #333;" width="50%" colspan="2">'.$client_detail->VendorAddress.'</th>
+        <th style="border-right: 1px solid #333;border-left: 1px solid #333;" width="50%" colspan="2">'.$deliveryAdd.'</th>
+        </tr>';
+        
+        $city_name = get_city_by_id($client_detail->city);
+        if(empty($city_name)){
+            $new_city_name = $client_detail->city;
+			}else {
+            $new_city_name = $city_name->city_name;
+		}
+        
+        $city_name2 = get_city_by_id($client_details2->city);
+        if(empty($city_name2)){
+            $new_city_name2 = $client_details2->city;
+			}else {
+            $new_city_name2 = $city_name2->city_name;
+		}
+        
+        $html .= '<tr>
+        <th style="border-left: 1px solid #333;border-right: 1px solid #333;" width="50%" colspan="2"></th>
+        <th style="border-right: 1px solid #333;border-left: 1px solid #333;" width="50%" colspan="2"></th>
+        </tr>';
+        
+        $html .= '<tr>
+        <th style="border-left: 1px solid #333;border-right: 1px solid #333;" width="50%" colspan="2">GSTIN  <b>'.$client_detail->vat.'</b></th>
+        <th style="border-right: 1px solid #333;border-left: 1px solid #333;" width="50%" colspan="2"><b></b></th>
+        </tr>';
+        if($client_detail->phonenumber == ""){
+            $Mobile = $client_detail->cmobile;
+			}else{
+            $Mobile = $client_detail->phonenumber;
+		}
+        if($client_details2->phonenumber == ""){
+            $Mobile2 = $client_details2->cmobile;
+			}else{
+            $Mobile2 = $client_details2->phonenumber;
+		}
+        $html .= '<tr>
+        <th style="border-left: 1px solid #333;border-right: 1px solid #333;" width="50%" colspan="2">Mobile No  <b>'.$Mobile.'</b></th>
+        <th style="border-right: 1px solid #333;border-left: 1px solid #333;" width="50%" colspan="2"></th>
+        </tr>';
+        
+        $html .= '<tr>
+        <th style="border-left: 1px solid #333;border-right: 1px solid #333;border-bottom: 1px solid #333;" width="50%" colspan="2">Food Lic No  <b>'.$client_detail->FLNO1.'</b></th>
+        <th style="border-right: 1px solid #333;border-bottom: 1px solid #333;border-left: 1px solid #333;" width="50%" colspan="2"></th>
+        </tr>';
+        $rowspan = 'rowspan="2"';
+        $item_name_width = "28%";
+        $hsn_width = "7%";
+        $html .= '<tr>
+        <th width="3.6%" '.$rowspan.' style="text-align:center;"><b>Sr.No.</b></th>
+        <th width="'.$item_name_width.'" '.$rowspan.'><b>Name of Product</b></th>
+        <th width="'.$hsn_width.'" '.$rowspan.'><b>HSN Code</b></th>
+        <th width="6%" '.$rowspan.' style="text-align:center;"><b>Pack Qty</b></th>
+        <th width="9.5%" '.$rowspan.' style="text-align:center;"><b>Qty</b></th>
+        <th width="8%" '.$rowspan.' style="text-align:center;"><b>Rate</b></th>
+        <th width="8%" '.$rowspan.' style="text-align:center;"><b>Amount</b></th>
+        <th width="6%" '.$rowspan.' style="text-align:center;"><b>Disc Amount</b></th>
+        <th width="8%" '.$rowspan.' style="text-align:center;"><b>Taxable Amount</b></th>';
+		
+		$html .= '<th style="text-align:center;" width="6%"><b>GST</b></th>';
+		$html .= '<th style="text-align:center;" width="9%"><b>Total</b></th>';
+		//$html .= '<td '.$rowspan.' style="text-align:center;">Total Amt</td>';    
+		$html .= '</tr>';
+		$html .= '<tr>
+        
+        <th style="text-align:center;"><b>%</b></th>
+        <th style="text-align:center;"><b>Amount</b></th>
+        </tr>';
+        
+        $html .= '</thead>';
+        $html .= '<tbody>';
+        
+        
+		$inv_item = GetItemDetailsFrK1GatepassBYChallan($invoice->ChallanID);
+		$i = 1;
+		$total_item_count = count($inv_item);
+		
+		if($total_item_count <= 13 ){
+			$empty_height = 330;
+		}
+		
+		if($total_item_count > 13 && $total_item_count<=33){
+			$empty_height = 700;
+			$empty_height1 = 340;
+		}
+		if($total_item_count > 33 ){
+			$empty_height = 340;
+		}
+		
+		$qty = 0;
+		$units = 0;
+		$amt = 0;
+		$dis_amt = 0;
+		$taxable_amt_item = 0;
+		$order_total = 0;
+		foreach ($inv_item as $item) {
+			$hsn_code = get_prod_hsn_byitem_id($item['ItemID']);
+			if($total_item_count <= 13 ){
+				$empty_height = $empty_height - 23;
+			}
+			if($total_item_count > 13 && $total_item_count<=33){
+				$empty_height = $empty_height - 22;
+			}
+			if($total_item_count > 13 && $total_item_count<=33 && $i > 33){
+				$empty_height1 = $empty_height1 - 22;
+			}
+			if($total_item_count > 33 && $i > 33){
+				$empty_height = $empty_height - 22;
+			}
+			$html .= '<tr>'; 
+			$html .= '<td width="3.6%" style="text-align:center;">'.$i.'</td>'; 
+			$html .= '<td width="'.$item_name_width.'" class="description" align="left;" width="'.$item_name_width.'"><b>'.$item['ProductName'].'</b></td>';
+			$html .= '<td width="'.$hsn_width.'" style="text-align:center;"><b>'.$hsn_code->hsn_code.'</b></td>';
+			$html .= '<td width="6%" style="text-align:right;"><b>'. (int) $item['CaseQty'].'</b></td>';
+			
+			$html .= '<td width="9.5%" style="text-align:right;"><b>'. (int) $item['OrderQty'].'</b></td>';
+			$units = $units + $item['OrderQty'];
+            $qty = $qty + (int) $item['CaseQty'];
+			$html .= '<td width="8%" style="text-align:right;"><b>'.number_format($item['BasicRate'], 2, '.', '').'</b></td>';
+			$html .= '<td width="8%" style="text-align:right;"><b>'.$item['ChallanAmt'].'</b></td>';
+			$amt = $amt + $item['ChallanAmt'];
+			$html .= '<td width="6%" style="text-align:right;"><b>'.round($item['DiscAmt'],2) .'</b></td>';
+			$dis_amt = $dis_amt + $item['DiscAmt'];
+			$html .= '<td width="8%" style="text-align:right;"><b>'.number_format(($item['ChallanAmt'] - $item['DiscAmt']), 2, '.', '').'</b></td>';
+			
+			$taxable_amt_item = $taxable_amt_item + ($item['ChallanAmt'] - $item['DiscAmt']);
+			
+			if($client_detail->state == "MH"){
+				$gst_rate = $item['cgst'] + $item['sgst'];
+				$gst_rate = $gst_rate.".00";
+				$scgst = $item['cgstamt'] * 2;
+				$gst_total = $gst_total + $scgst;
+				}else {
+				$gst_rate = $item['igst'];
+				$gst_total = $gst_total + $item['igstamt'];
+			}
+			
+			
+			
+			$html .= '<td width="6%" style="text-align:center;"><b>'.$gst_rate.'</b></td>';
+			$html .= '<td width="9%" style="text-align:right;"><b>'.$item['NetChallanAmt'].'</b></td>';
+			$order_total = $order_total + $item['NetChallanAmt'];
+			$html .= '</tr>';
+			
+			$i++;
+		}
+		$amt = (double) $amt;
+		
+		if(!empty($inv_item)){
+			$html .='<tr>';
+			$html .='<td colspan="2" style="text-align:center;"><b>Total</b></td>'; 
+			$html .='<td style="text-align:center;"></td>';
+			$html .='<td style="text-align:right;"><b>'.$qty.'</b></td>';
+			$html .='<td style="text-align:right;"><b>'.$units.'</b></td>';
+			$html .='<td></td>';
+			$html .='<td style="text-align:right;"><b>'.number_format($amt, 2, '.', '').'</b></td>';
+			$html .='<td style="text-align:right;"><b>'.round($dis_amt,2).'</b></td>';
+			$html .='<td style="text-align:right;"><b>'.number_format($taxable_amt_item, 2, '.', '').'</b></td>';
+			
+			$html .='<td style="text-align:center;"><b></b></td>'; 
+			$html .='<td style="text-align:right;"><b>'.number_format($order_total, 2, '.', '').'</b></td>';
+			$html .='</tr>';
+		}
+		
+		//if($total_item_count > 17 && $total_item_count <=33){
+        $html .='<tr><td colspan="12" width="99.1%" height="'.$empty_height.'px"></td></tr>';
+        if($total_item_count > 13 && $total_item_count<=33){
+			$html .='<tr><td colspan="12" height="'.$empty_height1.'px"></td></tr>';
+		}
+		
+		
+        $html .= '</tbody>';
+        
+        $html .= '<tfoot style="width:100%;position:fixed !important;bottom:0 !important">';
+		
+		$html .='<tr>
+		<td colspan="2" width="20%" style="text-align:center;"><b>GST Breakup</b></td>
+		<td width="6%" style="text-align:center;"><b>GST %'.'</b></td>
+		<td width="13.2%" style="text-align:center;"><b>Taxable Amt</b></td>
+		<td width="7%" style="text-align:center;"><b>CGST %</b></td>
+		<td width="9%" style="text-align:center;"><b>CGST Amt</b></td>
+		<td width="7%" style="text-align:center;"><b>SGST %</b></td>
+		<td width="9%" style="text-align:center;"><b>SGST Amt</b></td>
+		<td width="6%" style="text-align:center;"><b>IGST %</b></td>
+		<td width="8%" style="text-align:center;"><b>IGST Amt</b></td>
+		<td width="9%" style="text-align:center;"><b>GST Amt</b></td>
+		<td width="5%" style="text-align:center;"><b>Item </b></td>
+		
+		</tr>';
+		
+		if($client_detail->state == "MH"){
+			$gst_detail = get_k1gst_details($order_detail["OrderID"]);
+			
+			$gst_count = count($gst_detail);
+			$bill_gst_total = 0.00;
+			$i = 0;
+			if($gst_count == "1"){
+				$gst_brk_after_space_h = 22;
+				}if($gst_count == "2"){
+				$gst_brk_after_space_h = 0;
+			}
+			if($gst_count == "3"){
+				$gst_brk_after_space_h = 0;
+			}
+			foreach ($gst_detail as $gvalue) {
+                # code...
+                
+                $html .='<tr>';
+                if($i == 0){
+                    $html .='<td rowspan="'.$gst_count.'" colspan="2" width="20%"></td>';
+				}
+                $gst_per = $gvalue["cgst"] * 2;
+                $gst_per = $gst_per;
+                $taxable_amt = get_k1gst_taxable_amt($order_detail["OrderID"],$gvalue["cgst"]);
+                $cs_gst_amt = get_k1gst_amt($order_detail["OrderID"],$gvalue["cgst"]);
+                $gst_total_amt = $cs_gst_amt * 2;
+                $item_count = get_k1gst_item_count($order_detail["OrderID"],$gvalue["cgst"]);
+                $item_count_new = count($item_count);
+                $html .='<td width="6%" style="text-align:center;"><b>'.$gst_per.'.00</b></td>
+                <td width="13.2%" style="text-align:center;"><b>'.number_format($taxable_amt, 2, '.', '').'</b></td>
+                <td width="7%" style="text-align:center;"><b>'.number_format($gvalue["cgst"], 2, '.', '').'</b></td>
+                <td width="9%" style="text-align:center;"><b>'.number_format($cs_gst_amt, 2, '.', '').'</b></td>
+                <td width="7%" style="text-align:center;"><b>'.number_format($gvalue["cgst"], 2, '.', '').'</b></td>
+                <td width="9%" style="text-align:center;"><b>'.number_format($cs_gst_amt, 2, '.', '').'</b></td>
+                <td width="6%" style="text-align:center;"></td>
+                <td width="8%" style="text-align:center;"></td>
+                <td width="9%" style="text-align:center;"><b>'. number_format($gst_total_amt, 2, '.', '').'</b></td>
+                <td width="5%" style="text-align:center;"><b>'.$item_count_new .'</b></td>
+                
+                </tr>';
+                $bill_gst_total = $bill_gst_total + $gst_total_amt;
+				$i++;
+			}
+			}else {
+            
+            
+            
+            $igst_detail = get_k1igst_details($order_detail["OrderID"]);
+			
+            $igst_count = count($igst_detail);
+            $i = 0;
+            
+			foreach ($igst_detail as $igvalue) {
+                # code...
+                
+                $html .='<tr>';
+                if($i == 0){
+                    $html .='<td rowspan="'.$igst_count.'" colspan="2" width="20%"></td>';
+				}
+                $igst_per = $igvalue["igst"];
+                $igst_per = $igst_per;
+                $taxable_amt = get_k1igst_taxable_amt($order_detail["OrderID"],$igvalue["igst"]);
+                $i_gst_amt = get_k1igst_amt($order_detail["OrderID"],$igvalue["igst"]);
+                $i_item_count = get_k1igst_item_count($order_detail["OrderID"],$igvalue["igst"]);
+                $i_item_count_new = count($i_item_count);
+                $html .='<td width="6%" style="text-align:center;"><b>'.$igst_per.'</b></td>
+                <td width="13.2%" style="text-align:center;"><b>'.number_format($taxable_amt, 2, '.', '').'</b></td>
+                <td width="7%" style="text-align:center;"></td>
+                <td width="9%" style="text-align:center;"></td>
+                <td width="7%" style="text-align:center;"></td>
+                <td width="9%" style="text-align:center;"></td>
+                <td width="6%" style="text-align:center;"><b>'.$igvalue["igst"].'</b></td>
+                <td width="8%" style="text-align:center;"><b>'. number_format($i_gst_amt, 2, '.', '').'</b></td>
+                <td width="9%" style="text-align:center;"><b>'. number_format($i_gst_amt, 2, '.', '').'</b></td>
+                <td width="5%" style="text-align:center;"><b>'.$i_item_count_new.'</b></td>
+                
+                </tr>';
+                $bill_gst_total = $bill_gst_total + $i_gst_amt;
+				$i++;
+			}  
+		}
+        if($gst_count>1){}else{
+            $html .='<tr><td colspan="12" style="height:'.$gst_brk_after_space_h.'px;"></td></tr>';
+		}
+        
+        
+		$html .='<tr>'; 
+		$html .='<td colspan="8" style="border-right:none;" width="60%"></td>';
+		
+		
+		$html .='<td colspan="3" width="25%"><b>Taxable Value/ Amt</b></td>';
+		$html .='<td  style="text-align:right;" width="14.3%"><b>'. number_format($taxable_amt_item, 2, '.', '').'</b></td>';
+		$html .='</tr>'; 
+		
+		
+		$html .='<tr>'; 
+		if($client_detail->state == "MH"){
+			$bank_rowspan='rowspan="6"';
+			}else {
+			$bank_rowspan='rowspan="5"';
+		}
+		if($PlantID == "1"){
+			$BankMsg = '<b>Bank A/c Details - KIRTI AGRI SOLUTION PVT LTD.<br>1. STATE BANK OF INDIA - A/C - 00000000000, IFSC-SBIN0000086, Bank Road, PUNE <br>2. PUNJAB NATIONAL BANK - A/C - 000000000000000, IFSC-PUNB0187500, Jubilee Road, PUNE<br>3. UPI Details - 0000000000@kotak</b>';
+			}else{
+			$BankMsg = '';
+		}
+		$html .='<td colspan="8" '.$bank_rowspan.'>'.$BankMsg.'</td>';
+		if($client_detail->state == "MH"){
+			$html .='<td colspan="3"><b>Add CGST</b></td>';
+			$grand_csgst = $gst_total / 2;
+			$html .='<td '.$colspan_taxable_amt.' style="text-align:right;"><b>'.number_format($bill_gst_total / 2, 2, '.', '').'</b></td>';
+			}else {
+			$html .='<td colspan="3"><b>Add IGST</b></td>';
+			$html .='<td '.$colspan_taxable_amt.' style="text-align:right;"><b>'.number_format($bill_gst_total, 2, '.', '').'</b></td>';
+		}
+		
+		$html .='</tr>'; 
+		
+		if($client_detail->state == "MH"){
+			$html .='<tr>'; 
+			$html .='<td colspan="3"><b>Add SGST</b></td>';
+			$html .='<td '.$colspan_taxable_amt.' style="text-align:right;"><b>'.number_format($bill_gst_total /2, 2, '.', '').'</b></td>';
+			$html .='</tr>'; 
+		}
+		$sale_data = get_k1_is_tcs($sales_detail->SalesID);
+		// print_r($sales_detail->SalesID);die;
+		$html .='<tr>'; 
+		$html .='<td colspan="3"><b>Add TCS @ '.round($sale_data->tcs,2).'%</b></td>';
+		$html .='<td '.$colspan_taxable_amt.' style="text-align:right;"><b>'.number_format($sale_data->tcsAmt, 2, '.', '').'</b></td>';
+		$html .='</tr>'; 
+		$html .='<tr>'; 
+		$html .='<td colspan="3"><b>Amount after GST + TCS</b></td>';
+		$tcs_amt = $sale_data->tcsAmt;
+		$inc_tcs_amt = $order_total + $tcs_amt;
+		$html .='<td '.$colspan_taxable_amt.' style="text-align:right;"><b>'.number_format(round($sale_data->BillAmt), 2, '.', '').'</b></td>';
+		$html .='</tr>'; 
+		
+		$html .='<tr>'; 
+		$html .='<td colspan="3"><b>Previous Balance</b></td>';
+		$html .='<td '.$colspan_taxable_amt.'></td>';
+		$html .='</tr>';
+		$html .='<tr>'; 
+		$html .='<td colspan="3"><b>Balance Amt (Rnd)</b></td>';
+		$html .='<td '.$colspan_taxable_amt.' style="text-align:right;"></td>';
+		$html .='</tr>';
+		$html .='<tr>'; 
+		
+		$src= 'https://chart.googleapis.com/chart?chs=115x115&cht=qr&chl='.$sales_detail->Qrcode.'&choe=UTF-8';
+		$html .='<td colspan="8">';
+		if($sales_detail->irn !== null){
+			$html .='<img src="'.$src.'" title="Link to Google.com" /><br><b>IRN '.$sales_detail->irn.'</b>';
+		}
+		$html .='</td>';
+		$html .='<td colspan="4">For<b> '.$PlantDetail->FIRMNAME.'<br><br><br><br><br><br><br>Authorized Signatory</b></td>';
+		$html .='</tr>';
+		
+        $html .= '</tfoot>';
+        $html .= '</table>';
+        //$html .= '</div>';
+		//$pdf->AddPage();
+	}
+	
+	
+	$pdf->writeHTML($html, true, false, false, false, '');
+?>
