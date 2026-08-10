@@ -45,8 +45,57 @@
 		"use strict";
 		return x.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
 	}
+	function normalizeHotNumeric(value) {
+		"use strict";
+		var parsedValue = parseFloat(value);
+		return isNaN(parsedValue) ? 0 : parsedValue;
+	}
+	function validateOrderQtyAgainstPoLimit(hotInstance, row, oldValue, newValue) {
+		"use strict";
+		if (newValue === undefined || newValue === null || newValue === '') {
+			return true;
+		}
+		var enteredQty = normalizeHotNumeric(newValue);
+		var rowPOrderQty = normalizeHotNumeric(hotInstance.getDataAtCell(row, 7));
+		if (enteredQty > rowPOrderQty) {
+			var revertedValue = (oldValue === undefined || oldValue === null || oldValue === '') ? 0 : oldValue;
+			hotInstance.setDataAtCell(row, 8, revertedValue);
+			alert('Qty should be less than or equal to PO Qty');
+			return false;
+		}
+		var itemId = hotInstance.getDataAtCell(row, 0);
+		if (itemId === undefined || itemId === null || itemId === '') {
+			return true;
+		}
+		var firstMatchRow = -1;
+		var totalSameItemQty = 0;
+		var totalRows = hotInstance.countRows();
+		for (var i = 0; i < totalRows; i++) {
+			if (String(hotInstance.getDataAtCell(i, 0)) !== String(itemId)) {
+				continue;
+			}
+			if (firstMatchRow === -1) {
+				firstMatchRow = i;
+			}
+			var currentQty = normalizeHotNumeric(hotInstance.getDataAtCell(i, 8));
+			if (i === row) {
+				currentQty = enteredQty;
+			}
+			totalSameItemQty += currentQty;
+		}
+		if (firstMatchRow !== -1) {
+			var firstRowPoQty = normalizeHotNumeric(hotInstance.getDataAtCell(firstMatchRow, 7));
+			if (totalSameItemQty > firstRowPoQty) {
+				var revertedValueForDuplicate = (oldValue === undefined || oldValue === null || oldValue === '') ? 0 : oldValue;
+				hotInstance.setDataAtCell(row, 8, revertedValueForDuplicate);
+				alert('Total qty for duplicate items should not exceed the first PO Qty');
+				return false;
+			}
+		}
+		return true;
+	}
 	<?php
-	if (!empty($pur_order_detail)) { ?>
+	if (isset($pur_order_detail) && !empty($pur_order_detail)) { ?>
 		var dataObject = <?php echo html_entity_decode($pur_order_detail); ?>;
 	<?php
 	} else { ?>
@@ -264,7 +313,8 @@
 	{
 		data: 'BatchNo',
 			type: 'text',
-			},
+				readOnly: false
+	},
 	{
 		data: 'ExpDate',
 			type: 'date',
@@ -367,7 +417,8 @@
 							alert("Please Select vendor"); return false;
 						} else {
 							count++;
-							$.post(admin_url + 'PurchaseMaster/GetItemDetails/' + newValue).done(function (response) {
+							let OrderID = $('#PurchID').val();
+							$.post(admin_url + 'PurchaseMaster/GetItemDetailsPO/' + newValue + '/' + OrderID).done(function (response) {
 								response = JSON.parse(response);
 								hot.setDataAtCell(row, 1, response.hsn_code);
 								hot.setDataAtCell(row, 2, response.BrandName);
@@ -375,9 +426,9 @@
 								hot.setDataAtCell(row, 4, response.PackingQty);
 								hot.setDataAtCell(row, 5, response.PackingWeight);
 								hot.setDataAtCell(row, 6, response.unit);
-								hot.setDataAtCell(row, 7, '0');
+								hot.setDataAtCell(row, 7, response.POrderQty);
 								hot.setDataAtCell(row, 8, '0');
-								hot.setDataAtCell(row, 9, response.rate);
+								hot.setDataAtCell(row, 9, response.PurchRate);
 								hot.setDataAtCell(row, 10, '0');
 								hot.setDataAtCell(row, 11, response.taxrate);
 								hot.setDataAtCell(row, 12, '0');
@@ -388,6 +439,11 @@
 						}
 					}
 				} else if (prop == 'OrderQty' || prop == 'PurchRate') {
+					if (prop == 'OrderQty') {
+						if (!validateOrderQtyAgainstPoLimit(hot, row, oldValue, newValue)) {
+							return;
+						}
+					}
 					let pqtyValue = hot.getDataAtCell(row, 7);
 					let qtyValue = hot.getDataAtCell(row, 8);
 					let rate = hot.getDataAtCell(row, 9);
@@ -527,6 +583,9 @@
 					}
 				} else if (prop == 'OrderQty' || prop == 'PurchRate') {
 					if (prop == 'OrderQty') {
+						if (!validateOrderQtyAgainstPoLimit(hot, row, oldValue, newValue)) {
+							return;
+						}
 						// if (hot.getDataAtCell(row, 7) > oldValue) {
 						// 	hot.setDataAtCell(row, 7, oldValue);
 						// 	alert('Qty Should Be Less Then Or Equals To Previous Qty');
@@ -657,7 +716,7 @@
 		if (col === 16) {
 			const editor = this.getActiveEditor();
 			if (editor && editor.TEXTAREA) {
-				editor.TEXTAREA.setAttribute('readonly', true);
+				editor.TEXTAREA.removeAttribute('readonly');
 			}
 		}
 	});

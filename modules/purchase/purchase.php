@@ -339,7 +339,12 @@ function purchase_add_footer_components() {
         echo '<script src="'.base_url('modules/purchase/assets/plugins/handsontable/chosen.jquery.js').'"></script>';
         echo '<script src="'.base_url('modules/purchase/assets/plugins/handsontable/handsontable-chosen-editor.js').'"></script>'; 
     }
-    if (!(strpos($viewuri, '/admin/PurchaseMaster/AddEditPurchaseInward') === false)) {
+    if (!(strpos($viewuri, '/admin/PurchaseMaster/Inward') === false)) {
+        echo '<link rel="stylesheet prefetch" href="'.base_url('modules/purchase/assets/plugins/handsontable/chosen.css').'">';
+        echo '<script src="'.base_url('modules/purchase/assets/plugins/handsontable/chosen.jquery.js').'"></script>';
+        echo '<script src="'.base_url('modules/purchase/assets/plugins/handsontable/handsontable-chosen-editor.js').'"></script>'; 
+    }
+    if (!(strpos($viewuri, '/admin/PurchaseMaster/Invoice') === false)) {
         echo '<link rel="stylesheet prefetch" href="'.base_url('modules/purchase/assets/plugins/handsontable/chosen.css').'">';
         echo '<script src="'.base_url('modules/purchase/assets/plugins/handsontable/chosen.jquery.js').'"></script>';
         echo '<script src="'.base_url('modules/purchase/assets/plugins/handsontable/handsontable-chosen-editor.js').'"></script>'; 
@@ -360,6 +365,11 @@ function purchase_add_footer_components() {
         echo '<script src="'.base_url('modules/purchase/assets/plugins/handsontable/handsontable-chosen-editor.js').'"></script>'; 
     }
     if (!(strpos($viewuri, '/admin/PurchaseMaster/AddEditPurchaseOrderNew') === false)) {
+        echo '<link rel="stylesheet prefetch" href="'.base_url('modules/purchase/assets/plugins/handsontable/chosen.css').'">';
+        echo '<script src="'.base_url('modules/purchase/assets/plugins/handsontable/chosen.jquery.js').'"></script>';
+        echo '<script src="'.base_url('modules/purchase/assets/plugins/handsontable/handsontable-chosen-editor.js').'"></script>'; 
+    }
+    if (!(strpos($viewuri, '/admin/PurchaseMaster/Order') === false)) {
         echo '<link rel="stylesheet prefetch" href="'.base_url('modules/purchase/assets/plugins/handsontable/chosen.css').'">';
         echo '<script src="'.base_url('modules/purchase/assets/plugins/handsontable/chosen.jquery.js').'"></script>';
         echo '<script src="'.base_url('modules/purchase/assets/plugins/handsontable/handsontable-chosen-editor.js').'"></script>'; 
@@ -464,7 +474,12 @@ function purchase_add_footer_components() {
         echo '<script src="'.base_url('modules/purchase/assets/plugins/handsontable/chosen.jquery.js').'"></script>';
         echo '<script src="'.base_url('modules/purchase/assets/plugins/handsontable/handsontable-chosen-editor.js').'"></script>'; 
     }
-    if (!(strpos($viewuri, 'admin/PurchaseMaster/AddEditPurchaseInward') === false)) {
+    if (!(strpos($viewuri, 'admin/PurchaseMaster/Inward') === false)) {
+        echo '<link rel="stylesheet prefetch" href="'.base_url('modules/purchase/assets/plugins/handsontable/chosen.css').'">';
+        echo '<script src="'.base_url('modules/purchase/assets/plugins/handsontable/chosen.jquery.js').'"></script>';
+        echo '<script src="'.base_url('modules/purchase/assets/plugins/handsontable/handsontable-chosen-editor.js').'"></script>'; 
+    }
+    if (!(strpos($viewuri, 'admin/PurchaseMaster/Invoice') === false)) {
         echo '<link rel="stylesheet prefetch" href="'.base_url('modules/purchase/assets/plugins/handsontable/chosen.css').'">';
         echo '<script src="'.base_url('modules/purchase/assets/plugins/handsontable/chosen.jquery.js').'"></script>';
         echo '<script src="'.base_url('modules/purchase/assets/plugins/handsontable/handsontable-chosen-editor.js').'"></script>'; 
@@ -603,7 +618,11 @@ function purchase_add_head_components() {
         echo '<script src="' . module_dir_url(PURCHASE_MODULE_NAME, 'assets/plugins/handsontable/handsontable.full.min.js') . '"></script>';
         echo '<link href="' . module_dir_url(PURCHASE_MODULE_NAME, 'assets/plugins/handsontable/handsontable.full.min.css') . '"  rel="stylesheet" type="text/css" />';
     }
-    if(!(strpos($viewuri, '/admin/PurchaseMaster/AddEditPurchaseInward') === false)){
+    if(!(strpos($viewuri, '/admin/PurchaseMaster/Inward') === false)){
+        echo '<script src="' . module_dir_url(PURCHASE_MODULE_NAME, 'assets/plugins/handsontable/handsontable.full.min.js') . '"></script>';
+        echo '<link href="' . module_dir_url(PURCHASE_MODULE_NAME, 'assets/plugins/handsontable/handsontable.full.min.css') . '"  rel="stylesheet" type="text/css" />';
+    }
+    if(!(strpos($viewuri, '/admin/PurchaseMaster/Invoice') === false)){
         echo '<script src="' . module_dir_url(PURCHASE_MODULE_NAME, 'assets/plugins/handsontable/handsontable.full.min.js') . '"></script>';
         echo '<link href="' . module_dir_url(PURCHASE_MODULE_NAME, 'assets/plugins/handsontable/handsontable.full.min.css') . '"  rel="stylesheet" type="text/css" />';
     }
@@ -620,6 +639,10 @@ function purchase_add_head_components() {
         echo '<link href="' . module_dir_url(PURCHASE_MODULE_NAME, 'assets/plugins/handsontable/handsontable.full.min.css') . '"  rel="stylesheet" type="text/css" />';
     }
     if(!(strpos($viewuri, '/admin/PurchaseMaster/AddEditPurchaseOrderNew') === false)){
+        echo '<script src="' . module_dir_url(PURCHASE_MODULE_NAME, 'assets/plugins/handsontable/handsontable.full.min.js') . '"></script>';
+        echo '<link href="' . module_dir_url(PURCHASE_MODULE_NAME, 'assets/plugins/handsontable/handsontable.full.min.css') . '"  rel="stylesheet" type="text/css" />';
+    }
+    if(!(strpos($viewuri, '/admin/PurchaseMaster/Order') === false)){
         echo '<script src="' . module_dir_url(PURCHASE_MODULE_NAME, 'assets/plugins/handsontable/handsontable.full.min.js') . '"></script>';
         echo '<link href="' . module_dir_url(PURCHASE_MODULE_NAME, 'assets/plugins/handsontable/handsontable.full.min.css') . '"  rel="stylesheet" type="text/css" />';
     }
@@ -664,7 +687,11 @@ function purchase_add_head_components() {
         echo '<script src="' . module_dir_url(PURCHASE_MODULE_NAME, 'assets/plugins/handsontable/handsontable.full.min.js') . '"></script>';
         echo '<link href="' . module_dir_url(PURCHASE_MODULE_NAME, 'assets/plugins/handsontable/handsontable.full.min.css') . '"  rel="stylesheet" type="text/css" />';
     }
-    if(!(strpos($viewuri, '/admin/PurchaseMaster/AddEditPurchaseInward') === false)){
+    if(!(strpos($viewuri, '/admin/PurchaseMaster/Inward') === false)){
+        echo '<script src="' . module_dir_url(PURCHASE_MODULE_NAME, 'assets/plugins/handsontable/handsontable.full.min.js') . '"></script>';
+        echo '<link href="' . module_dir_url(PURCHASE_MODULE_NAME, 'assets/plugins/handsontable/handsontable.full.min.css') . '"  rel="stylesheet" type="text/css" />';
+    }
+    if(!(strpos($viewuri, '/admin/PurchaseMaster/Invoice') === false)){
         echo '<script src="' . module_dir_url(PURCHASE_MODULE_NAME, 'assets/plugins/handsontable/handsontable.full.min.js') . '"></script>';
         echo '<link href="' . module_dir_url(PURCHASE_MODULE_NAME, 'assets/plugins/handsontable/handsontable.full.min.css') . '"  rel="stylesheet" type="text/css" />';
     }
@@ -759,7 +786,10 @@ function purchase_head_components() {
     if(!(strpos($viewuri, '/admin/PurchaseMaster/AddEditInward') === false)){
         echo '<link href="' . module_dir_url(PURCHASE_MODULE_NAME, 'assets/css/pur_order.css') .'?v=' . PURCHASE_REVISION.'"  rel="stylesheet" type="text/css" />';
     }
-    if(!(strpos($viewuri, '/admin/PurchaseMaster/AddEditPurchaseInward') === false)){
+    if(!(strpos($viewuri, '/admin/PurchaseMaster/Inward') === false)){
+        echo '<link href="' . module_dir_url(PURCHASE_MODULE_NAME, 'assets/css/pur_order.css') .'?v=' . PURCHASE_REVISION.'"  rel="stylesheet" type="text/css" />';
+    }
+    if(!(strpos($viewuri, '/admin/PurchaseMaster/Invoice') === false)){
         echo '<link href="' . module_dir_url(PURCHASE_MODULE_NAME, 'assets/css/pur_order.css') .'?v=' . PURCHASE_REVISION.'"  rel="stylesheet" type="text/css" />';
     }
     if(!(strpos($viewuri, '/admin/PurchaseMaster/AddEditPurchaseInvoice') === false)){
@@ -772,6 +802,9 @@ function purchase_head_components() {
         echo '<link href="' . module_dir_url(PURCHASE_MODULE_NAME, 'assets/css/pur_order.css') .'?v=' . PURCHASE_REVISION.'"  rel="stylesheet" type="text/css" />';
     }
     if(!(strpos($viewuri, '/admin/PurchaseMaster/AddEditPurchaseOrderNew') === false)){
+        echo '<link href="' . module_dir_url(PURCHASE_MODULE_NAME, 'assets/css/pur_order.css') .'?v=' . PURCHASE_REVISION.'"  rel="stylesheet" type="text/css" />';
+    }
+    if(!(strpos($viewuri, '/admin/PurchaseMaster/Order') === false)){
         echo '<link href="' . module_dir_url(PURCHASE_MODULE_NAME, 'assets/css/pur_order.css') .'?v=' . PURCHASE_REVISION.'"  rel="stylesheet" type="text/css" />';
     }
     if(!(strpos($viewuri, '/admin/KirtiOneOrder') === false)){

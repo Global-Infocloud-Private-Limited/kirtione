@@ -228,7 +228,7 @@
 
 			<div class="col-md-12">
 
-				<div class="panel_s accounting-template estimate">
+				<div class="panel_s accounting-template estimate" style="margin-bottom: 8px;">
 
 					<div class="row">
 
@@ -304,7 +304,7 @@
 
 														</span>
 
-														<input type="text" name="pro_orderid" id="pro_orderid" class="form-control receiptsid" value="<?php echo $PONumber; ?>" data-isedit="<?php echo $isedit; ?>" data-original-number="<?php echo $purchase_details->Inv_No; ?>" <?php echo ($isedit) ? 'disabled' : '' ?>>
+														<input type="text" name="pro_orderid" id="pro_orderid" class="form-control receiptsid" value="<?php echo $PONumber; ?>" data-isedit="<?php echo $isedit; ?>" data-original-number="<?php echo $purchase_details->Inv_No ?? ''; ?>" <?php echo ($isedit) ? 'disabled' : '' ?>>
 
 													</div>
 
@@ -354,50 +354,8 @@
 
 												?>
 
-											</div>                        
-
+											</div>  
 											
-
-											<!--<div class="col-md-2"> 
-
-												<?php $value = (isset($purchase_details) ? $purchase_details->CenterID : ''); ?>						
-
-												<div class="form-group" app-field-wrapper="centername">
-
-												<label for="centername" class="control-label">Center Name</label>
-
-												<select name="centername" id="centername" class="selectpicker form-control" data-none-selected-text="Non Selected" data-live-search="true">
-
-												<option value=""></option>   
-
-												<?php
-
-													foreach($centermaster as $center) 
-
-													{						
-
-														echo '<option value="' . $center['CenterID'] . '" 
-
-														data-statsid="' . $center['state'] . '" 
-
-														' . ($value == $center['CenterID'] ? 'selected' : '') . '>' 
-
-														. $center['CenterName'] . 
-
-														'</option>';
-
-													} 
-
-												?>                                                                                                                                    
-
-												</select>
-
-												</div>
-
-											</div>-->  
-
-											
-
 											<div class="col-md-2">
 
 												<?php $value = (isset($purchase_details) ? $purchase_details->AccountID : ''); ?>
@@ -502,9 +460,9 @@
 
 													<label for="CenterName">Center Name</label>
 
-													<input type="text" name="CenterName" id="CenterName" class="form-control" value="<?php echo $purchase_details->CenterName; ?>"  readonly>
+													<input type="text" name="CenterName" id="CenterName" class="form-control" value="<?php echo $purchase_details->CenterName ?? ''; ?>"  readonly>
 
-													<input type="hidden" name="CenterState" id="CenterState" value="<?php echo $purchase_details->CenterState; ?>">
+													<input type="hidden" name="CenterState" id="CenterState" value="<?php echo $purchase_details->CenterState ?? ''; ?>">
 
 												</div>
 
@@ -518,7 +476,7 @@
 
 													<label for="mobile_no">Mobile No.</label>
 
-													<input type="text" name="mobile_no" id="mobile_no" class="form-control" value="<?php echo $purchase_details->phonenumber; ?>" data-isedit="<?php echo $isedit; ?>" data-original-number="<?php echo $purchase_details->phonenumber; ?>" <?php echo ($isedit) ? 'readonly' : '' ?> readonly>
+													<input type="text" name="mobile_no" id="mobile_no" class="form-control" value="<?php echo $purchase_details->phonenumber ?? ''; ?>" data-isedit="<?php echo $isedit; ?>" data-original-number="<?php echo $purchase_details->phonenumber ?? ''; ?>" <?php echo ($isedit) ? 'readonly' : '' ?> readonly>
 
 												</div>
 
@@ -532,7 +490,7 @@
 
 													<label for="gst">Gst</label>
 
-													<input type="text" name="gst" id="gst" class="form-control" value="<?php echo $purchase_details->gst; ?>" data-isedit="<?php echo $isedit; ?>" <?php echo ($isedit) ? 'readonly' : '' ?> readonly>
+													<input type="text" name="gst" id="gst" class="form-control" value="<?php echo $purchase_details->gst ?? ''; ?>" data-isedit="<?php echo $isedit; ?>" <?php echo ($isedit) ? 'readonly' : '' ?> readonly>
 
 												</div>
 
@@ -546,7 +504,7 @@
 
 												<?php //$Isdisabled = !empty($value) ? 'disabled' : '';  ?>
 
-												<?php $Isdisabled = (isset($value) ? 'disabled' : ''); ?>
+												<?php $Isdisabled = (isset($value) && $isedit ? 'disabled' : ''); ?>
 
 												<div class="form-group">
 
@@ -602,7 +560,7 @@
 
 													<label for="ewaybillno" class="control-label">E-wayBill No</label>
 
-													<input type="text" name="ewaybillno" id="ewaybillno" class="form-control" value = "<?php echo $purchase_details->EwayBillNo; ?>" data-isedit="<?php echo $isedit; ?>" data-original-number="<?php echo $purchase_details->EwayBillNo; ?>">
+													<input type="text" name="ewaybillno" id="ewaybillno" class="form-control" value = "<?php echo $purchase_details->EwayBillNo ?? ''; ?>" data-isedit="<?php echo $isedit; ?>" data-original-number="<?php echo $purchase_details->EwayBillNo ?? ''; ?>">
 
 												</div>
 
@@ -614,7 +572,7 @@
 
 													<label for="VehicleNo" class="control-label">Vehicle No.</label>
 
-													<input type="text" name="VehicleNo" id="VehicleNo" class="form-control" value = "<?php echo $purchase_details->VehicleNo; ?>" data-isedit="<?php echo $isedit; ?>" data-original-number="<?php echo $purchase_details->VehicleNo; ?>">
+													<input type="text" name="VehicleNo" id="VehicleNo" class="form-control" value = "<?php echo $purchase_details->VehicleNo ?? ''; ?>" data-isedit="<?php echo $isedit; ?>" data-original-number="<?php echo $purchase_details->VehicleNo ?? ''; ?>">
 
 												</div>
 
@@ -626,7 +584,7 @@
 
 													<label for="InvoiceNo" class="control-label">Vendor Doc No.</label>
 
-													<input type="text" name="InvoiceNo" id="InvoiceNo" class="form-control" value = "<?php echo $purchase_details->InvoiceNo; ?>" data-isedit="<?php echo $isedit; ?>" data-original-number="<?php echo $purchase_details->InvoiceNo; ?>">
+													<input type="text" name="InvoiceNo" id="InvoiceNo" class="form-control" value = "<?php echo $purchase_details->InvoiceNo ?? ''; ?>" data-isedit="<?php echo $isedit; ?>" data-original-number="<?php echo $purchase_details->InvoiceNo ?? ''; ?>">
 
 												</div>
 
@@ -642,7 +600,7 @@
 
 													<select name="ordstat" id="ordstat" class="selectpicker form-control" data-none-selected-text="Non Selected" data-live-search="true" disabled>									
 
-														<option value="C"<?php echo ($value == "P") ? 'selected' : ''; ?>>Pending</option>            
+														<option value="P"<?php echo ($value == "P") ? 'selected' : ''; ?>>Pending</option>            
 
 														<option value="F"<?php echo ($value == "F") ? 'selected' : ''; ?>>Completed</option>  
 
@@ -714,7 +672,7 @@
 
 										        $value = (isset($purchase_details) ? $purchase_details->Is_Ledger : '');
 
-										        if($purchase_details->IsSale > 0 && isset($purchase_details) && $value == 'N' && !empty($purchase_details->Inv_No)){
+										        if(isset($purchase_details) && $purchase_details->IsSale > 0 && $value == 'N' && !empty($purchase_details->Inv_No)){
 
 										            ?>
 
@@ -756,7 +714,7 @@
 
 					</div>
 
-					<div class="panel-body mtop10">
+					<div class="panel-body" style="background-color: #fff;">
 
 						<div class="row col-md-12">
 
@@ -786,7 +744,7 @@
 
 												<label for="total_qty_in_mt">Total Qty</label> 
 
-												<input type="text" readonly class="form-control pull-left text-right" name="total_qty_in_mt" id="total_qty_in_mt" value="<?php echo $purchase_details->TotalOrderQty; ?>">
+												<input type="text" readonly class="form-control pull-left text-right" name="total_qty_in_mt" id="total_qty_in_mt" value="<?php echo $purchase_details->TotalOrderQty ?? ''; ?>">
 
 											</td>
 
@@ -794,7 +752,7 @@
 
 												<label for="total_amt_in_mt">SubTotal</label> 
 
-												<input type="text" readonly class="form-control pull-left text-right" name="total_amt_in_mt" id="total_amt_in_mt" value="<?php echo $purchase_details->Purchamt;?>">
+												<input type="text" readonly class="form-control pull-left text-right" name="total_amt_in_mt" id="total_amt_in_mt" value="<?php echo $purchase_details->Purchamt ?? ''; ?>">
 
 											</td>
 
@@ -802,7 +760,7 @@
 
 												<label for="total_disc_in_mt">Discount Amt</label> 
 
-												<input type="text" readonly class="form-control pull-left text-right" name="total_disc_in_mt" id="total_disc_in_mt" value="<?php echo $purchase_details->Discamt;?>">
+												<input type="text" readonly class="form-control pull-left text-right" name="total_disc_in_mt" id="total_disc_in_mt" value="<?php echo $purchase_details->Discamt ?? ''; ?>">
 
 											</td>
 
@@ -810,7 +768,7 @@
 
 												<label  for="Total_value">Taxable Amt</label>  
 
-												<input  type="text" readonly class="form-control pull-left text-right" name="Total_value" id="Total_value" value="<?php echo $purchase_details->taxable_amt;?>" >
+												<input  type="text" readonly class="form-control pull-left text-right" name="Total_value" id="Total_value" value="<?php echo $purchase_details->taxable_amt ?? ''; ?>" >
 
 											</td>  
 
@@ -820,7 +778,7 @@
 
 												<label  for="total_cgst_amt">CGST Amt</label>  
 
-												<input type="text" readonly class="form-control pull-left text-right" id="total_cgst_amt" name="total_cgst_amt" value="<?php echo $purchase_details->cgstamt;?>">
+												<input type="text" readonly class="form-control pull-left text-right" id="total_cgst_amt" name="total_cgst_amt" value="<?php echo $purchase_details->cgstamt ?? ''; ?>">
 
 											</td>
 
@@ -828,7 +786,7 @@
 
 												<label  for="total_sgst_amt">SGST Amt</label>
 
-												<input type="text" readonly class="form-control pull-left text-right" name="total_sgst_amt" id="total_sgst_amt" value="<?php echo $purchase_details->sgstamt;?>">
+												<input type="text" readonly class="form-control pull-left text-right" name="total_sgst_amt" id="total_sgst_amt" value="<?php echo $purchase_details->sgstamt ?? ''; ?>">
 
 											</td>
 
@@ -836,7 +794,7 @@
 
 												<label  for="total_igst_amt">IGST Amt</label> 
 
-												<input type="text" readonly class="form-control pull-left text-right" name="total_igst_amt" id="total_igst_amt" value="<?php echo $purchase_details->igstamt;?>">
+												<input type="text" readonly class="form-control pull-left text-right" name="total_igst_amt" id="total_igst_amt" value="<?php echo $purchase_details->igstamt ?? ''; ?>">
 
 											</td>
 
@@ -844,7 +802,7 @@
 
 												<label  for="total_tcs_amt">TCS Amt</label> 
 
-												<input type="text" class="form-control pull-left text-right" name="total_tcs_amt" id="total_tcs_amt" value="<?php echo $purchase_details->tcsAmt;?>">
+												<input type="text" class="form-control pull-left text-right" name="total_tcs_amt" id="total_tcs_amt" value="<?php echo $purchase_details->tcsAmt ?? ''; ?>">
 
 											</td>
 
@@ -852,7 +810,7 @@
 
 												<label  for="total_roundoff_amt">RoundOff Amt</label> 
 
-												<input type="text" readonly class="form-control pull-left text-right" name="total_roundoff_amt" id="total_roundoff_amt" value="<?php echo $purchase_details->RoundOffAmt;?>">
+												<input type="text" readonly class="form-control pull-left text-right" name="total_roundoff_amt" id="total_roundoff_amt" value="<?php echo $purchase_details->RoundOffAmt ?? ''; ?>">
 
 											</td>                            
 
@@ -862,7 +820,7 @@
 
 												<label  for="netpayableamt">Invoice Amt</label> 
 
-												<input type="text" readonly class="form-control pull-left text-right" name="netpayableamt" id="netpayableamt" value="<?php echo $purchase_details->Invamt;?>">
+												<input type="text" readonly class="form-control pull-left text-right" name="netpayableamt" id="netpayableamt" value="<?php echo $purchase_details->Invamt ?? ''; ?>">
 
 											</td>                    
 
@@ -1020,7 +978,7 @@
 
 				<button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
 
-				<h4 class="modal-title">Purchase Order List</h4>
+				<h4 class="modal-title">Purchase Inward List</h4>
 
 			</div>
 
@@ -1206,7 +1164,7 @@
 			method: 'POST',
 			dataType: 'json',
 			data : {
-				'purchase_inward_no': '<?= $purchase_details->Inv_No; ?>'
+				'purchase_inward_no': '<?= $purchase_details->Inv_No ?? ''; ?>'
 			},
 			success: function (data) {
 				if(data.success){
@@ -1243,185 +1201,95 @@
 
 <script type="text/javascript" language="javascript" >
 
-	function GetPO(VenId)
-
-	{
-
+	function GetPO(VenId){
 		var dataObject2 = []; 
-
 		hot.loadData(dataObject2);
-
-		
-
 		if(VenId == "" || VenId == null)
-
 		{
-
 			var optionsHtml = '<option value="">None Selected</option>';
-
 			$('#PurchID').html(optionsHtml);
-
 			$('.selectpicker').selectpicker('refresh');
-
-			
-
-		}
-
-		else
-
-		{
-
-			
-
+		}else{
 			$.ajax({
-
-				url:"<?php echo admin_url(); ?>PurchaseMaster/GetPOByVendor",
-
+				url:"<?php echo admin_url(); ?>PurchaseMaster/PendingPOByVendor",
 				dataType:"JSON",
-
 				method:"POST",
-
 				data:{VenId:VenId},
-
-				
-
 				success:function(rtndata){
-
 					var optionsHtml = '<option value="">None Selected</option>';
-
-					
-
 					for (var i = 0; i < rtndata.length; i++) {
-
 						optionsHtml += '<option value="' + rtndata[i].PurchID + '">' + rtndata[i].PurchID + '</option>';
-
 					}
-
 					$('#PurchID').html(optionsHtml);
-
 					$('.selectpicker').selectpicker('refresh');
-
-					
-
-					
-
 				}
-
 			});
-
 		}
-
 	}
-
 	
-
 	function GetPODetails(PoNo){
-
 		$('#CenterName').val('');
-
-		if(PoNo == '')
-
-		{
-
+		if(PoNo == ''){
 			var dataObject2 = []; 
-
 			hot.loadData(dataObject2);
-
-			
-
-			
-
-			
-
 			$('input[name="total_qty_in_mt"]').val('');
-
 			$('input[name="total_amt_in_mt"]').val('');
-
 			$('input[name="total_disc_in_mt"]').val('');
-
 			$('input[name="total_cgst_amt"]').val('');
-
 			$('input[name="total_sgst_amt"]').val('');
-
 			$('input[name="total_igst_amt"]').val('');
-
 			$('input[name="total_igst_amt"]').val('');
-
 			$('input[name="total_roundoff_amt"]').val('');
-
 			$('input[name="netpayableamt"]').val('');
-
 			$('input[name="Total_value"]').val('');
-
-		}
-
-		else
-
-		{
-
+		}else{
 			$.ajax({
-
-				url:"<?php echo admin_url(); ?>PurchaseMaster/GetPOItemData",
-
+				url:"<?php echo admin_url(); ?>PurchaseMaster/GetPODetails",
 				dataType:"JSON",
-
 				method:"POST",
-
 				data:{PoNo:PoNo},
-
-				
-
 				success:function(rtndata){
-
+					$('#vendor_value').val(rtndata.OrderData.AccountID);
 					$('#CenterName').val(rtndata.OrderData.CenterName);
-
 					$('#CenterState').val(rtndata.OrderData.CenterStateID);
-
 					$('#InvoiceNo').val(rtndata.OrderData.InvoiceNo);
-
+					$('#mobile_no').val(rtndata.OrderData.phonenumber);
+					$('#gst').val(rtndata.OrderData.gst);
+					$('#state').val(rtndata.OrderData.state).selectpicker('refresh')
+					$('#state_value').val(rtndata.OrderData.state);
+					if(rtndata.OrderData.gst == ''){
+						$('#gst').attr('readonly', false);
+					}else{
+						$('#gst').attr('readonly', true);
+					}
 					/*
 					|--------------------------------------------------------------------------
 					| Create allowed Handsontable item list
 					|--------------------------------------------------------------------------
 					*/
-
 					purchaseOrderItemList.length = 0;
 					purchaseOrderItemData = Array.isArray(rtndata.historytbl)
 						? rtndata.historytbl
 						: [];
-
-
 					/*
 					|--------------------------------------------------------------------------
 					| Build allowed item dropdown
 					|--------------------------------------------------------------------------
 					*/
-
 					purchaseOrderItemList.length = 0;
-
 					var allowedItemIds = [];
-
-					purchaseOrderItemData.forEach(function(orderItem)
-					{
+					purchaseOrderItemData.forEach(function(orderItem){
 						var itemId = String(orderItem.id);
-
-						if (allowedItemIds.indexOf(itemId) === -1)
-						{
+						if (allowedItemIds.indexOf(itemId) === -1){
 							allowedItemIds.push(itemId);
 						}
 					});
 
-
-					allItemList.forEach(function(masterItem)
-					{
-						if (
-							allowedItemIds.indexOf(String(masterItem.id)) !== -1
-						)
-						{
+					allItemList.forEach(function(masterItem){
+						if (allowedItemIds.indexOf(String(masterItem.id)) !== -1){
 							purchaseOrderItemList.push(masterItem);
 						}
 					});
-
 
 					/*
 					|--------------------------------------------------------------------------
@@ -1429,8 +1297,7 @@
 					|--------------------------------------------------------------------------
 					*/
 
-					if (purchaseOrderItemData.length > 0)
-					{
+					if (purchaseOrderItemData.length > 0){
 						/*
 						* Important:
 						* Do not load BatchList object arrays directly into the visible cell.
@@ -1439,14 +1306,10 @@
 						* separately.
 						*/
 
-						var tableData = purchaseOrderItemData.map(function(orderItem)
-						{
+						var tableData = purchaseOrderItemData.map(function(orderItem){
 							var tableRow = {};
-
-							Object.keys(orderItem).forEach(function(key)
-							{
-								if (key !== 'BatchList')
-								{
+							Object.keys(orderItem).forEach(function(key){
+								if (key !== 'BatchList'){
 									tableRow[key] = orderItem[key];
 								}
 							});
@@ -1461,10 +1324,7 @@
 							return tableRow;
 						});
 
-
 						hot.loadData(tableData);
-
-
 						/*
 						|--------------------------------------------------------------------------
 						| Apply batches to original rows
@@ -1482,40 +1342,21 @@
 
 
 						hot.render();
-					}
-					else
-					{
+					}else{
 						hot.loadData([]);
 					}
-
 					
-
 					setTimeout(function () {
-
 						const totalRows = hot.countRows();
-
 						const targetCol = 8; // e.g., OrderQty column
-
-						
-
 						for (let row = 0; row < totalRows; row++) {
-
 							const currentValue = hot.getDataAtCell(row, targetCol);
-
 							hot.setDataAtCell(row, targetCol, currentValue); // Triggers afterChange
-
 						}
-
 					}, 2000);
-
 				}
-
 			});
-
-			
-
 		}
-
 	}
 
 	
@@ -1604,7 +1445,7 @@
 
 		var url = window.location.href;
 
-		var regex = /\/AddEditPurchaseInvoice\/([^\/?#]+)/;	
+		var regex = /\/Inward\/([^\/?#]+)/;	
 
 		if (url.match(regex)) {
 
@@ -1633,37 +1474,84 @@
 		
 
 		function load_data(from_date,to_date)
-
 		{
-
 			$.ajax({
-
-				url:"<?php echo admin_url(); ?>PurchaseMaster/load_data_for_purchase_invoice",            
-
+				url:"<?php echo admin_url(); ?>PurchaseMaster/filter_data_for_purchase_inward",            
 				method:"POST",
-
+				dataType:"JSON",
 				data:{from_date:from_date, to_date:to_date},
-
 				beforeSend: function () {
-
 					$('#searchh2').css('display','block');
-
 					$('.table_purchase_report tbody').css('display','none');
-
 				},
-
 				complete: function () {
-
 					$('.table_purchase_report tbody').css('display','');
-
 					$('#searchh2').css('display','none');
-
 				},
+				success: function(response) {
 
-				success:function(data){
+						var tbody = $('.table_purchase_report tbody');
+						tbody.empty();
 
-					$('.table_purchase_report tbody').html(data);
+						var TotalPurchAmt = 0;
+						var TotalDiscAmt = 0;
+						var TotalCgstAmt = 0;
+						var TotalSgstAmt = 0;
+						var TotalIgstAmt = 0;
+						var TotalInvAmt = 0;
 
+						if (response.status === 'success') {
+
+								$.each(response.data, function(index, val) {
+
+										var url = admin_url + 'PurchaseMaster/Inward/' + val.Inv_No;
+
+										tbody.append(`
+												<tr onclick="window.location.href='${url}'" style="cursor:pointer;">
+														<td style="text-align:center;">${val.Inv_No}</td>
+														<td style="text-align:center;">${val.Transdate}</td>
+														<td style="text-align:center;">${val.PurchID}</td>
+														<td style="text-align:center;">${val.Pr_no}</td>
+														<td style="text-align:left;">${val.AccountName}</td>
+														<td style="text-align:left;">${val.CenterName}</td>
+														<td style="text-align:left;">${val.OrderStatus}</td>
+														<td style="text-align:right;">${parseFloat(val.Purchamt || 0).toFixed(2)}</td>
+														<td style="text-align:right;">${parseFloat(val.Discamt || 0).toFixed(2)}</td>
+														<td style="text-align:right;">${parseFloat(val.cgstamt || 0).toFixed(2)}</td>
+														<td style="text-align:right;">${parseFloat(val.sgstamt || 0).toFixed(2)}</td>
+														<td style="text-align:right;">${parseFloat(val.igstamt || 0).toFixed(2)}</td>
+														<td style="text-align:right;">${parseFloat(val.Invamt || 0).toFixed(2)}</td>
+												</tr>
+										`);
+
+										TotalPurchAmt += parseFloat(val.Purchamt) || 0;
+										TotalDiscAmt += parseFloat(val.Discamt) || 0;
+										TotalCgstAmt += parseFloat(val.cgstamt) || 0;
+										TotalSgstAmt += parseFloat(val.sgstamt) || 0;
+										TotalIgstAmt += parseFloat(val.igstamt) || 0;
+										TotalInvAmt += parseFloat(val.Invamt) || 0;
+								});
+
+								tbody.append(`
+										<tr>
+												<td colspan="7" style="text-align:right;"><b>Total</b></td>
+												<td style="text-align:right;"><b>${TotalPurchAmt.toLocaleString('en-IN',{minimumFractionDigits:2, maximumFractionDigits:2})}</b></td>
+												<td style="text-align:right;"><b>${TotalDiscAmt.toLocaleString('en-IN',{minimumFractionDigits:2, maximumFractionDigits:2})}</b></td>
+												<td style="text-align:right;"><b>${TotalCgstAmt.toLocaleString('en-IN',{minimumFractionDigits:2, maximumFractionDigits:2})}</b></td>
+												<td style="text-align:right;"><b>${TotalSgstAmt.toLocaleString('en-IN',{minimumFractionDigits:2, maximumFractionDigits:2})}</b></td>
+												<td style="text-align:right;"><b>${TotalIgstAmt.toLocaleString('en-IN',{minimumFractionDigits:2, maximumFractionDigits:2})}</b></td>
+												<td style="text-align:right;"><b>${TotalInvAmt.toLocaleString('en-IN',{minimumFractionDigits:2, maximumFractionDigits:2})}</b></td>
+										</tr>
+								`);
+
+						} else {
+
+								tbody.append(`
+										<tr>
+												<td colspan="13" class="text-center">No records found.</td>
+										</tr>
+								`);
+						}
 				}
 
 			});

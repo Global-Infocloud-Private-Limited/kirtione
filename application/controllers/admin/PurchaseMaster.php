@@ -16,7 +16,12 @@
 			}
 			if ($this->input->post()) {
 				$pur_order_data = $this->input->post();
-				$pur_order_data['terms'] = nl2br($pur_order_data['terms']);
+				if(isset($pur_order_data['terms'])){
+				    $pur_order_data['terms'] = nl2br($pur_order_data['terms']);
+				}else{
+				    $pur_order_data['terms'] = '';
+				}
+				
 				if ($PRNumber == '') {
 					if (!has_permission_new('PurchaseRequest', '', 'create')) {
 						access_denied('PurchaseRequest');
@@ -178,6 +183,141 @@
 			$data['company_detail'] = $this->PurchaseModel->get_company_detail();
 			$this->load->view('admin/PurchaseMaster/AddEditPurchaseOrderNew',$data);
 		}
+
+		public function Order($PONumber = '')
+		{
+			if (!has_permission_new('PurchaseOrder', '', 'view')) {
+				access_denied('purchase order');
+			}
+			if ($this->input->post()) {
+				// echo '<pre>';print_r($this->input->post());die;
+				$pur_order_data = $this->input->post();
+				if(isset($pur_order_data['terms'])){
+				    $pur_order_data['terms'] = nl2br($pur_order_data['terms']);
+				}else{
+				    $pur_order_data['terms'] = '';
+				}
+				
+				if (!empty($pur_order_data['reminder_date'])) {
+					$reminderDate = to_sql_date($pur_order_data['reminder_date']);
+					if (strtotime($reminderDate) < strtotime(date('Y-m-d'))) {
+						set_alert('warning', 'Reminder Date must be today or a future date.');
+						redirect($PONumber == '' ? admin_url('PurchaseMaster/Order') : admin_url('PurchaseMaster/Order/' . $PONumber));
+					}
+				}
+				if ($PONumber == '') {
+					if (!has_permission_new('PurchaseOrder', '', 'create')) {
+						access_denied('PurchaseOrder');
+					}
+					$id = $this->PurchaseModel->CreatePurchaseOrder($pur_order_data);
+					if ($id) {
+						set_alert('success', _l('added_successfully', _l('pur_order')));
+						redirect(admin_url('PurchaseMaster/Order'));
+					}
+					}else{
+					if (!has_permission_new('PurchaseOrder', '', 'edit')) {
+						access_denied('PurchaseOrder');
+					}
+					$id = $this->PurchaseModel->UpdatePurchaseOrder($pur_order_data,$PONumber);
+					if ($id) {
+						set_alert('success', _l('added_successfully', _l('pur_order')));
+						redirect(admin_url('PurchaseMaster/Order'));
+					}
+				}
+			}
+			if ($PONumber == '') {
+				$title = _l('create_new_pur_order');
+			}else{
+				$PurchaseDetails = $this->PurchaseModel->GetPODetails($PONumber);
+				$data['purchase_details'] = $PurchaseDetails;
+				$PurchaseItemList = $this->PurchaseModel->GetPurchaseOrderItemList($PONumber);
+				$data['pur_order_detail'] = json_encode($PurchaseItemList);
+				$title = "Edit Purchase Order";
+				// echo "<pre>";print_r($PurchaseItemList);die;
+			}
+			$SubactgropuId = 1000017;
+			$wh_effect = '(SubActGroupID="'.$SubactgropuId.'")';
+			$EffectOn = $this->PurchaseModel->get_all_data($tablename="tblclients",$wh_effect);
+			$data['EffectOn'] = $EffectOn;
+			$centermaster = $this->PurchaseModel->GetCenterList();
+			$data['centermaster'] = $centermaster;
+			$trader_list = $this->PurchaseModel->GetAccountList();
+			//$trader_list = $this->PurchaseModel->PendingInwardVendors();
+			$data['trader_list'] = $trader_list;
+			$data['item_code'] = $this->PurchaseModel->get_items_code();
+			$data['statelist'] = $this->PurchaseModel->getstatelist();
+			$data['company_detail'] = $this->PurchaseModel->get_company_detail();
+			$this->load->view('admin/PurchaseMaster/Order',$data);
+		}
+
+		public function Inward($PINumber = '')
+		{
+			if (!has_permission_new('PurchaseInvoice', '', 'view')) {
+				access_denied('purchase order');
+			}
+			if ($this->input->post()) {
+				// echo '<pre>';print_r($this->input->post());die;
+				$pur_order_data = $this->input->post();
+				if(isset($pur_order_data['terms'])){
+				    $pur_order_data['terms'] = nl2br($pur_order_data['terms']);
+				}else{
+				    $pur_order_data['terms'] = '';
+				}
+
+				if ($PINumber == '') {
+					if (!has_permission_new('PurchaseInvoice', '', 'create')) {
+						access_denied('PurchaseInvoice');
+					}
+					$id = $this->PurchaseModel->CreatePurchaseInward($pur_order_data);
+					if ($id) {
+					   // is array condition added 21apr2026
+					    if(is_array($id)){
+					        set_alert('warning', $id['message'].$id['data'], $id['data']);
+					    }else{
+					        set_alert('success', _l('added_successfully', _l('pur_order')));
+					    }
+					   // end
+					    redirect(admin_url('PurchaseMaster/Inward'));
+					}
+				}else{
+					if (!has_permission_new('PurchaseInvoice', '', 'edit')) {
+						access_denied('PurchaseInvoice');
+					}
+					$id = $this->PurchaseModel->UpdatePurchaseInward($pur_order_data,$PINumber);
+					if ($id) {
+						set_alert('success', _l('added_successfully', _l('pur_order')));
+						redirect(admin_url('PurchaseMaster/Inward'));
+					}
+				}
+			}
+			if ($PINumber == '') {
+				$title = "Create Purchase Invoice";
+			}else{
+				$PurchaseDetails = $this->PurchaseModel->GetPurchaseInvoiceDetails($PINumber);
+				$PurchaseItemList = $this->PurchaseModel->GetPurchaseInvoiceItemList($PINumber);
+				$IsSale = 0;
+				foreach($PurchaseItemList as $val){
+				    if($val["SaleQty"] > 0){
+				        $IsSale++;
+				    }
+				}
+				$PurchaseDetails->IsSale = $IsSale;
+				$data['pur_order_detail'] = json_encode($PurchaseItemList);
+				$data['purchase_details'] = $PurchaseDetails;
+				$title = "Edit Purchase Invoice";
+				 //echo "<pre>";print_r($PurchaseDetails);die;
+			}
+			
+			$data['DirectExp'] = $this->PurchaseModel->get_all_data("tblclients", ['ActGroupID' => 10010]);
+			$data['DirectInc'] = $this->PurchaseModel->get_all_data("tblclients", ['ActGroupID' => 10011]);
+			$data['centermaster'] = $this->PurchaseModel->get_all_table_data("tblCenterMaster");
+			$data['trader_list'] = $this->PurchaseModel->PendingOrderVendors();
+			$data['item_code'] = $this->PurchaseModel->get_items_code();
+			$data['statelist'] = $this->PurchaseModel->getstatelist();
+			$data['company_detail'] = $this->PurchaseModel->get_company_detail();
+			$this->load->view('admin/PurchaseMaster/Inward',$data);
+		}
+
 		public function AddEditPurchaseInvoice($PINumber = '')
 		{
 			if (!has_permission_new('PurchaseInvoice', '', 'view')) {
@@ -455,6 +595,68 @@
 			$data['company_detail'] = $this->PurchaseModel->get_company_detail();
 			$this->load->view('admin/PurchaseMaster/AddEditPurchaseInvoiceLedger',$data);
 		}
+		
+		public function Invoice($PINumber = '')
+		{
+			if (!has_permission_new('PurchaseInvoiceLedger', '', 'view')) {
+				access_denied('purchase order');
+			}
+			if ($this->input->post()) {
+				$pur_order_data = $this->input->post();
+				if(isset($pur_order_data['terms'])){
+				    $pur_order_data['terms'] = nl2br($pur_order_data['terms']);
+				}else{
+				    $pur_order_data['terms'] = '';
+				}
+				if ($PINumber == '') {
+					if (!has_permission_new('PurchaseInvoiceLedger', '', 'create')) {
+						access_denied('PurchaseInvoiceLedger');
+					}
+					$id = $this->PurchaseModel->CreateInvoiceLedger($pur_order_data);
+					if ($id) {
+						set_alert('success', _l('added_successfully', _l('pur_order')));
+						redirect(admin_url('PurchaseMaster/Invoice'));
+					}
+				}else{
+					if (!has_permission_new('PurchaseInvoiceLedger', '', 'edit')) {
+						access_denied('PurchaseInvoiceLedger');
+					}
+					$id = $this->PurchaseModel->UpdateKirtiOnePurchaseInvoiceLedger($pur_order_data,$PINumber);
+					if ($id) {
+						set_alert('success', _l('added_successfully', _l('pur_order')));
+						redirect(admin_url('PurchaseMaster/Invoice'));
+					}
+				}
+			}
+			if ($PINumber == '') {
+				$title = "Create Purchase Invoice";
+			}else{
+				$PurchaseDetails = $this->PurchaseModel->GetPurchaseInvoiceDetails($PINumber);
+				$data['purchase_details'] = $PurchaseDetails;
+				$PurchaseItemList = $this->PurchaseModel->GetPurchaseInvoiceItemList($PINumber);
+				$data['pur_order_detail'] = json_encode($PurchaseItemList);
+				$title = "Edit Purchase Invoice";
+				// echo "<pre>";print_r($PurchaseItemList);die;
+				$selected_company = $this->session->userdata("root_company");
+        $fy = $this->session->userdata("finacial_year");
+				$data['expense_ledger'] = $this->PurchaseModel->get_all_data("tblK1PurchaseMasterExpenses", ["PlantID" => $selected_company, "FY" => $fy, "Inv_No" => $PINumber, "LedgerCategory" => 'Direct Expense']);
+				$data['income_ledger'] = $this->PurchaseModel->get_all_data("tblK1PurchaseMasterExpenses", ["PlantID" => $selected_company, "FY" => $fy, "Inv_No" => $PINumber, "LedgerCategory" => 'Direct Income']);
+			}
+			
+			$data['EffectOn'] = $this->PurchaseModel->get_all_data("tblclients", ['SubActGroupID' => '1000017']);
+			$data['DirectExp'] = $this->PurchaseModel->get_all_data("tblclients", ['ActGroupID' => 10010]);
+			$data['DirectInc'] = $this->PurchaseModel->get_all_data("tblclients", ['ActGroupID' => 10011]);
+			$data['centermaster'] = $this->PurchaseModel->get_all_table_data("tblCenterMaster");
+
+			// $trader_list = $this->PurchaseModel->GetAccountList();
+			$trader_list = $this->PurchaseModel->PendingInvoiceLedgerVendors();
+			$data['trader_list'] = $trader_list;
+			$data['item_code'] = $this->PurchaseModel->get_items_code();
+			$data['statelist'] = $this->PurchaseModel->getstatelist();
+			$data['company_detail'] = $this->PurchaseModel->get_company_detail();
+			$this->load->view('admin/PurchaseMaster/Invoice', $data);
+		}
+
 //====================== Cancel Purchase Ledger Entry ==========================
 		public function CancelPILedgerEntry()
 		{
@@ -474,6 +676,12 @@
 			$data = $this->PurchaseModel->get_order_PO_ven_details($VenId);
 			echo json_encode($data);
 		}
+		public function PendingPOByVendor()
+		{
+			$VenId = $this->input->post('VenId');
+			$data = $this->PurchaseModel->PendingPOByVendor($VenId);
+			echo json_encode($data);
+		}
 		public function GetPIByVendorAndCenter()
 		{
 			$VenId = $this->input->post('VenId');
@@ -485,6 +693,12 @@
 		{
 			$CenterID = $this->input->post('CenterID');
 			$data = $this->PurchaseModel->PendingInvoiceCenterwiseVendors($CenterID);
+			echo json_encode($data);
+		}
+		public function PendingPIByVendor()
+		{
+			$VenId = $this->input->post('VenId');
+			$data = $this->PurchaseModel->get_pending_PI_ven_details($VenId);
 			echo json_encode($data);
 		}
 		public function GetPIByVendor()
@@ -510,6 +724,16 @@
 			$InwardData['OrderData'] = $this->PurchaseModel->GetPurchaseOrderDetails($PoNo);
 			echo json_encode($InwardData);
 		}
+
+		public function GetPODetails(){
+			// POST data
+			$PoNo = $this->input->post('PoNo');
+			// Get data
+			$InwardData['historytbl'] = $this->PurchaseModel->GetPurchaseOrderItemListForInward($PoNo);
+			$InwardData['OrderData'] = $this->PurchaseModel->GetPODetails($PoNo);
+			echo json_encode($InwardData);
+		}
+
 		public function GetPIItemData(){
 			// POST data
 			$PINo = $this->input->post('PINo');
@@ -569,6 +793,11 @@
 			$data['statelist'] = $this->PurchaseModel->getstatelist();
 			$data['company_detail'] = $this->PurchaseModel->get_company_detail();
 			$this->load->view('admin/PurchaseMaster/AddEditPurchaseOrder',$data);
+		}
+		public function GetItemDetailsPO($ItemID, $OrderID = null)
+		{
+			$ItemDetails = $this->PurchaseModel->GetItemDetailsPO($ItemID, $OrderID);
+			echo json_encode($ItemDetails);
 		}
 		public function GetItemDetails($ItemID)
 		{
@@ -830,15 +1059,15 @@
 			$url2 = "";
 			foreach($PurchaseList as $key=>$val)
 			{
-				if($val['OrderStatus'] == "C")
-				{ $OrderStatus = "Cancelled";	}
-				else if($val['OrderStatus'] == "F"){
-					$OrderStatus = "Completed";
-				}else if($val['OrderStatus'] == "P"){
-					$OrderStatus = "Pending";
-				}else if($val['OrderStatus'] == "A"){
-					$OrderStatus = "Approved";
-				}
+				$orderStatusList = [
+					'C' => 'Cancelled',
+					'F' => 'Completed',
+					'P' => 'Pending',
+					'A' => 'Approved',
+					'I' => 'In Progress'
+				];
+				$OrderStatus = $orderStatusList[$val['OrderStatus']];
+				
 				$url = admin_url()."PurchaseMaster/AddEditPurchaseOrderNew/".$val["PurchID"];
 				//$html .= '<tr onclick="window.open('."'".$url."'".')">';
 				$html .= '<tr onclick="window.location.href=\''.$url.'\'">';
@@ -873,6 +1102,117 @@
 			$html .= '</tr>';
 			echo $html;
 		}
+
+		public function filter_data_for_purchase_order()
+		{
+			$data = array(
+			'from_date' => $this->input->post('from_date'),
+			'to_date'  => $this->input->post('to_date')
+			);
+			$PurchaseList = $this->PurchaseModel->filter_data_for_purchase_order_kirtione($data);
+			
+			$orderStatusList = [
+				'C' => 'Cancelled',
+				'F' => 'Completed',
+				'P' => 'Pending',
+				'A' => 'Approved',
+				'I' => 'In Progress'
+			];
+
+			if(empty($PurchaseList)) {
+				echo json_encode(['status' => 'error', 'message' => 'No data found for the given date range.']);
+				return;
+			}
+
+			foreach ($PurchaseList as $key => $val) {
+				$PurchaseList[$key]['OrderStatus'] = $orderStatusList[$val['OrderStatus']] ?? $val['OrderStatus'];
+				$PurchaseList[$key]['Transdate'] = _d(substr($val['Transdate'], 0, 10));
+			}
+
+			echo json_encode(['status' => 'success', 'data' => $PurchaseList]);
+		}
+
+		public function filter_data_for_purchase_inward()
+		{
+			$data = array(
+			'from_date' => $this->input->post('from_date'),
+			'to_date'  => $this->input->post('to_date')
+			);
+			$PurchaseList = $this->PurchaseModel->filter_data_for_purchase_inward_kirtione($data);
+
+			$statusList = [
+				'C' => 'Cancelled',
+				'F' => 'Completed',
+				'P' => 'Pending',
+				'A' => 'Approved',
+				'I' => 'In Progress'
+			];
+
+			if(empty($PurchaseList)) {
+				echo json_encode(['status' => 'error', 'message' => 'No data found for the given date range.']);
+				return;
+			}
+
+			foreach ($PurchaseList as $key => $val) {
+				$PurchaseList[$key]['OrderStatus'] = $statusList[$val['OrderStatus']] ?? $val['OrderStatus'];
+				$PurchaseList[$key]['Transdate'] = _d(substr($val['Transdate'], 0, 10));
+			}
+
+			echo json_encode(['status' => 'success', 'data' => $PurchaseList]);
+
+			// $html = "";
+			// $TotalPurchAmt = 0;
+			// $TotalDiscAmt = 0;
+			// $TotalCgstAmt = 0;
+			// $TotalSgstAmt = 0;
+			// $TotalIgstAmt = 0;
+			// $TotalInvAmt = 0;
+			// $url2 = "";
+			// foreach($PurchaseList as $key=>$val)
+			// {
+			// 	if($val['OrderStatus'] == "C")
+			// 	{ $OrderStatus = "Cancelled";	}
+			// 	else if($val['OrderStatus'] == "F"){
+			// 		$OrderStatus = "Completed";
+			// 		}else if($val['OrderStatus'] == "P"){
+			// 		$OrderStatus = "Pending";
+			// 	}
+			// 	$url = admin_url()."PurchaseMaster/AddEditPurchaseInvoice/".$val["Inv_No"];
+			// 	//$html .= '<tr onclick="window.open('."'".$url."'".')">';
+			// 	$html .= '<tr onclick="window.location.href=\''.$url.'\'">';
+			// 	$html .= '<td style="text-align:center;">'.$val["Inv_No"].'</td>';
+			// 	$html .= '<td style="text-align:center;">'._d(substr($val["Inv_date"],0,10)).'</td>';
+			// 	$html .= '<td style="text-align:center;">'.$val["PurchID"].'</td>';
+			// 	$html .= '<td style="text-align:center;">'.$val["Pr_no"].'</td>';
+			// 	$html .= '<td style="text-align:left;">'.$val["AccountName"].'</td>';
+			// 	$html .= '<td style="text-align:left;">'.$val["CenterName"].'</td>';
+			// 	$html .= '<td style="text-align:left;">'.$OrderStatus.'</td>';
+			// 	$html .= '<td style="text-align:right;">'.$val["Purchamt"].'</td>';
+			// 	$html .= '<td style="text-align:right;">'.$val["Discamt"].'</td>';
+			// 	$html .= '<td style="text-align:right;">'.$val["cgstamt"].'</td>';
+			// 	$html .= '<td style="text-align:right;">'.$val["sgstamt"].'</td>';
+			// 	$html .= '<td style="text-align:right;">'.$val["igstamt"].'</td>';
+			// 	$html .= '<td style="text-align:right;">'.$val["Invamt"].'</td>';
+			// 	$html .= '</tr>';
+			// 	$TotalPurchAmt += $val["Purchamt"];
+			// 	$TotalDiscAmt += $val["Discamt"];
+			// 	$TotalCgstAmt += $val["cgstamt"];
+			// 	$TotalSgstAmt += $val["sgstamt"];
+			// 	$TotalIgstAmt += $val["igstamt"];
+			// 	$TotalInvAmt += $val["Invamt"];
+			// }
+			// $html .= '<tr>';
+			// $html .= '<td colspan="7" style="text-align:right;"><b>Total</b></td>';
+			// $html .= '<td style="text-align:right;"><b>'.number_format($TotalPurchAmt, 2, '.', ',').'</b></td>';
+			// $html .= '<td style="text-align:right;"><b>'.number_format($TotalDiscAmt, 2, '.', ',').'</b></td>';
+			// $html .= '<td style="text-align:right;"><b>'.number_format($TotalCgstAmt, 2, '.', ',').'</b></td>';
+			// $html .= '<td style="text-align:right;"><b>'.number_format($TotalSgstAmt, 2, '.', ',').'</b></td>';
+			// $html .= '<td style="text-align:right;"><b>'.number_format($TotalIgstAmt, 2, '.', ',').'</b></td>';
+			// $html .= '<td style="text-align:right;"><b>'.number_format($TotalInvAmt, 2, '.', ',').'</b></td>';
+			// $html .= '</tr>';
+			// echo $html;
+		}
+
 		public function load_data_for_purchase_invoice()
 		{
 			$data = array(
@@ -1781,6 +2121,27 @@
 		else
 		{
 			echo json_encode(['success' => false, 'message' => 'Something Went Wrong']);
+		}
+	}
+//====================== Approve Purchase Order New ================================
+	public function ApprovePO()
+	{
+		$poId = $this->input->post('poId');
+		if($poId != ""){
+			$where = '(PurchID="'.$poId.'")';
+			$updateOrderData = array(
+				'OrderStatus'=>"A",
+				'ApproveUserID'=>$_SESSION['username'],
+				'ApproveTransDate'=>date('Y-m-d h:i:s')
+			);
+			$ApproveOrder = $this->PurchaseModel->edit_data("tblK1PurchaseOrderMaster", $where, $updateOrderData);
+			if($ApproveOrder){
+				echo json_encode(['success' => true,'message' => 'Order Approve successfully']);
+			}else{
+				echo json_encode(['success' => false,'message' => 'Something Went Wrong, PLease try again']);
+			}
+		}else{
+			echo json_encode(['success' => false, 'message' => 'Something Went Wrong, Please try again']);
 		}
 	}
 //====================== Approve Purchase Order ================================

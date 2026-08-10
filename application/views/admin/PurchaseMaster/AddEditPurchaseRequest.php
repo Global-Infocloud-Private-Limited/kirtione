@@ -23,15 +23,15 @@
 								<td colspan="12"><center><b>Purchase Request</b></center></td>
 							</tr>
 							<tr>
-								<td><b>Center Name : </b><?php echo $purchase_details->CenterName ; ?></td>
-								<td colspan="4"><b>Center State : </b><?php echo $purchase_details->StateCenter ; ?></td>
-								<td colspan="4"><b>PR No :</b> <?php echo $purchase_details->PurchID ; ?></td>
-								<td colspan="4" ><b>PR Date : </b><?php echo _d(substr($purchase_details->Transdate,0,10)) ; ?></td>
+								<td><b>Center Name : </b><?php echo $purchase_details->CenterName ?? '' ; ?></td>
+								<td colspan="4"><b>Center State : </b><?php echo $purchase_details->StateCenter ?? ''; ?></td>
+								<td colspan="4"><b>PR No :</b> <?php echo $purchase_details->PurchID ?? ''; ?></td>
+								<td colspan="4" ><b>PR Date : </b><?php echo _d(substr($purchase_details->Transdate,0,10)) ?? ''; ?></td>
 							</tr>
 							<tr>
-								<td><b>Vendor Name : </b><?php echo $purchase_details->company ; ?></td>
-								<td colspan="4"><b>GST : </b><?php echo  $purchase_details->gst ; ?></td>
-								<td colspan="8"><b>Address : </b><?php echo $purchase_details->VendorAddress ; ?></td>
+								<td><b>Vendor Name : </b><?php echo $purchase_details->company ?? '' ; ?></td>
+								<td colspan="4"><b>GST : </b><?php echo  $purchase_details->gst ?? '' ; ?></td>
+								<td colspan="8"><b>Address : </b><?php echo $purchase_details->VendorAddress ?? '' ; ?></td>
 							</tr>
 							
 							<tr>
@@ -77,35 +77,35 @@
 							?>
 							<tr class="" style=" white-space: nowrap;">
 								<td colspan="11" align="right">Subtotal Amt</td>
-								<td align="right"><?php echo $purchase_details->Purchamt;?></td>
+								<td align="right"><?php echo $purchase_details->Purchamt ?? ''; ?></td>
 							</tr>
 							<tr class="" style=" white-space: nowrap;">
 								<td colspan="11" align="right">Discount Amt</td>
-								<td align="right"><?php echo $purchase_details->Discamt;?></td>
+								<td align="right"><?php echo $purchase_details->Discamt ?? ''; ?></td>
 							</tr>
 							<tr class="" style=" white-space: nowrap;">
 								<td colspan="11" align="right">Taxable Amt</td>
-								<td align="right"><?php echo $purchase_details->taxable_amt;?></td>
+								<td align="right"><?php echo $purchase_details->taxable_amt ?? ''; ?></td>
 							</tr>
 							<tr class="" style=" white-space: nowrap;">
 								<td colspan="11" align="right">CGST Amt</td>
-								<td align="right"><?php echo $purchase_details->cgstamt;?></td>
+								<td align="right"><?php echo $purchase_details->cgstamt ?? ''; ?></td>
 							</tr>
 							<tr class="" style=" white-space: nowrap;">
 								<td colspan="11" align="right">SGST Amt</td>
-								<td align="right"><?php echo $purchase_details->sgstamt;?></td>
+								<td align="right"><?php echo $purchase_details->sgstamt ?? ''; ?></td>
 							</tr>
 							<tr class="" style=" white-space: nowrap;">
 								<td colspan="11" align="right">IGST Amt</td>
-								<td align="right"><?php echo $purchase_details->igstamt;?></td>
+								<td align="right"><?php echo $purchase_details->igstamt ?? ''; ?></td>
 							</tr>
 							<tr class="" style=" white-space: nowrap;">
 								<td colspan="11" align="right">Round Off Amt</td>
-								<td align="right"><?php echo $purchase_details->RoundOffAmt;?></td>
+								<td align="right"><?php echo $purchase_details->RoundOffAmt ?? ''; ?></td>
 							</tr>
 							<tr class="" style=" white-space: nowrap;">
 								<td colspan="11" align="right">Inv Amt</td>
-								<td align="right"><?php echo $purchase_details->Invamt;?></td>
+								<td align="right"><?php echo $purchase_details->Invamt ?? ''; ?></td>
 							</tr>
 						</tbody>
 					</table>
@@ -150,7 +150,7 @@
 														<span class="input-group-addon">
 															<?php echo $prefix; ?>
 														</span>
-														<input type="text" name="pro_orderid" id="pro_orderid" class="form-control receiptsid" value="<?php echo $PONumber; ?>" data-isedit="<?php echo $isedit; ?>" data-original-number="<?php echo $purchase_details->PurchID; ?>" <?php echo ($isedit) ? 'disabled' : '' ?>>
+														<input type="text" name="pro_orderid" id="pro_orderid" class="form-control receiptsid" value="<?php echo $PONumber; ?>" data-isedit="<?php echo $isedit; ?>" data-original-number="<?php echo $purchase_details->PurchID ?? ''; ?>" <?php echo ($isedit) ? 'disabled' : '' ?>>
 													</div>
 												</div>
 												
@@ -227,14 +227,14 @@
 												<?php $value = (isset($purchase_details) ? $purchase_details->phonenumber : ''); ?>
 												<div class="form-group">
 													<label for="mobile_no">Mobile No.</label>
-													<input type="text" name="mobile_no" id="mobile_no" class="form-control" value="<?php echo $purchase_details->phonenumber; ?>" data-isedit="<?php echo $isedit; ?>" data-original-number="<?php echo $purchase_details->phonenumber; ?>" <?php echo ($isedit) ? 'readonly' : '' ?> readonly>
+													<input type="text" name="mobile_no" id="mobile_no" class="form-control" value="<?php echo $purchase_details->phonenumber ?? ''; ?>" data-isedit="<?php echo $isedit; ?>" data-original-number="<?php echo $purchase_details->phonenumber ?? ''; ?>" <?php echo ($isedit) ? 'readonly' : '' ?> readonly>
 												</div>
 											</div>
 											<div class="col-md-2">
 												<?php $value = (isset($purchase_details) ? $purchase_details->gst : ''); ?>
 												<div class="form-group">
 													<label for="gst">Gst</label>
-													<input type="text" name="gst" id="gst" class="form-control" value="<?php echo $purchase_details->gst; ?>" data-isedit="<?php echo $isedit; ?>" <?php echo ($isedit) ? 'readonly' : '' ?> readonly>
+													<input type="text" name="gst" id="gst" class="form-control" value="<?php echo $purchase_details->gst ?? ''; ?>" data-isedit="<?php echo $isedit; ?>" <?php echo ($isedit) ? 'readonly' : '' ?> readonly>
 												</div>
 											</div> 
 											
@@ -302,41 +302,41 @@
 											
 											<td>
 												<label for="total_qty_in_mt">Total Qty</label> 
-												<input type="text" readonly class="form-control pull-left text-right" name="total_qty_in_mt" id="total_qty_in_mt" value="<?php echo $purchase_details->TotalOrderQty; ?>">
+												<input type="text" readonly class="form-control pull-left text-right" name="total_qty_in_mt" id="total_qty_in_mt" value="<?php echo $purchase_details->TotalOrderQty ?? ''; ?>">
 											</td>
 											<td>
 												<label for="total_amt_in_mt">SubTotal</label> 
-												<input type="text" readonly class="form-control pull-left text-right" name="total_amt_in_mt" id="total_amt_in_mt" value="<?php echo $purchase_details->Purchamt;?>">
+												<input type="text" readonly class="form-control pull-left text-right" name="total_amt_in_mt" id="total_amt_in_mt" value="<?php echo $purchase_details->Purchamt ?? ''; ?>">
 											</td>
 											<td>
 												<label for="total_disc_in_mt">Discount Amt</label> 
-												<input type="text" readonly class="form-control pull-left text-right" name="total_disc_in_mt" id="total_disc_in_mt" value="<?php echo $purchase_details->Discamt;?>">
+												<input type="text" readonly class="form-control pull-left text-right" name="total_disc_in_mt" id="total_disc_in_mt" value="<?php echo $purchase_details->Discamt ?? ''; ?>">
 											</td>
 											<td>
 												<label  for="Total_value">Taxable Amt</label>  
-												<input  type="text" readonly class="form-control pull-left text-right" name="Total_value" id="Total_value" value="<?php echo $purchase_details->taxable_amt;?>" >
+												<input  type="text" readonly class="form-control pull-left text-right" name="Total_value" id="Total_value" value="<?php echo $purchase_details->taxable_amt ?? ''; ?>" >
 											</td>  
 											
 											<td>  
 												<label  for="total_cgst_amt">CGST Amt</label>  
-												<input type="text" readonly class="form-control pull-left text-right" id="total_cgst_amt" name="total_cgst_amt" value="<?php echo $purchase_details->cgstamt;?>">
+												<input type="text" readonly class="form-control pull-left text-right" id="total_cgst_amt" name="total_cgst_amt" value="<?php echo $purchase_details->cgstamt ?? ''; ?>">
 											</td>
 											<td>  
 												<label  for="total_sgst_amt">SGST Amt</label>
-												<input type="text" readonly class="form-control pull-left text-right" name="total_sgst_amt" id="total_sgst_amt" value="<?php echo $purchase_details->sgstamt;?>">
+												<input type="text" readonly class="form-control pull-left text-right" name="total_sgst_amt" id="total_sgst_amt" value="<?php echo $purchase_details->sgstamt ?? ''; ?>">
 											</td>
 											<td>  
 												<label  for="total_igst_amt">IGST Amt</label> 
-												<input type="text" readonly class="form-control pull-left text-right" name="total_igst_amt" id="total_igst_amt" value="<?php echo $purchase_details->igstamt;?>">
+												<input type="text" readonly class="form-control pull-left text-right" name="total_igst_amt" id="total_igst_amt" value="<?php echo $purchase_details->igstamt ?? ''; ?>">
 											</td>
 											<td>  
 												<label  for="total_roundoff_amt">RoundOff Amt</label> 
-												<input type="text" readonly class="form-control pull-left text-right" name="total_roundoff_amt" id="total_roundoff_amt" value="<?php echo $purchase_details->RoundOffAmt;?>">
+												<input type="text" readonly class="form-control pull-left text-right" name="total_roundoff_amt" id="total_roundoff_amt" value="<?php echo $purchase_details->RoundOffAmt ?? ''; ?>">
 											</td>                            
 											
 											<td>  
 												<label  for="netpayableamt">Invoice Amt</label> 
-												<input type="text" readonly class="form-control pull-left text-right" name="netpayableamt" id="netpayableamt" value="<?php echo $purchase_details->Invamt;?>">
+												<input type="text" readonly class="form-control pull-left text-right" name="netpayableamt" id="netpayableamt" value="<?php echo $purchase_details->Invamt ?? ''; ?>">
 											</td>                    
 										</tr>
 									</tbody>
@@ -714,9 +714,9 @@
 			var paymentMode = $(this).val();    
 			
 			if (paymentMode == 1) {
-				$('#on_value').val('<?php echo $firstAccountID; ?>'); 
+				$('#on_value').val('<?php echo $firstAccountID ?? ''; ?>'); 
 				} else if (paymentMode == 2) {
-				$('#on_value').val('<?php echo $secondAccountID; ?>'); 
+				$('#on_value').val('<?php echo $secondAccountID ?? ''; ?>'); 
 			}
 		});		
 		

@@ -1477,7 +1477,7 @@
 
 							if($value["OrderID"] == $val2["OrderID"]){
 
-								$GSTNO = $val2["GSTNO"];
+								$GSTNO = $val2["PartyGST"];
 
 								$TransID = $val2["TransID"];
 
@@ -1637,7 +1637,7 @@
 
 						$list_add = [];   
 
-						$GSTNO = $value["GSTNO"];
+						$GSTNO = $value["PartyGST"];
 
 						//$GSTPer = $value['cgst'] + $value['sgst'] + $value['igst'];
 

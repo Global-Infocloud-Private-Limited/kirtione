@@ -102,7 +102,7 @@
 
 	<?php 	
 
-		if(!empty($pur_order_detail)){ ?>
+		if(isset($pur_order_detail) && !empty($pur_order_detail)){ ?>
 
         var dataObject = <?php echo html_entity_decode($pur_order_detail); ?>;
 

@@ -508,7 +508,7 @@ class KirtiOneOrderModel extends App_Model
 	public function get_items_code_by_categorytype($CategoryType)
 	{
 		if ($CategoryType == "Grocery") {
-			$Category = array('6', '8');
+			$Category = array('6', '8', '11');
 		} elseif ($CategoryType == "Non Grocery") {
 			$Category = array('1', '2', '3', '7','9','10');
 		} else {
@@ -4631,6 +4631,7 @@ class KirtiOneOrderModel extends App_Model
 					$PurchQty += ($stockval["TotalQty"]);
 					$ExpDate = _d(substr($stockval["ExpDate"], 0, 10));
 					$PurchRate = $stockval["PurchRate"];
+					$CaseQty = $stockval["CaseQty"];
 					$isPurch = true;
 				} else if ($stockval["BatchNo"] == $batchval && $stockval["TType"] == "P" && $stockval["TType2"] == "PURCHASE RETURN") {
 					$PurchRtnQty += ($stockval["TotalQty"]);
@@ -4661,7 +4662,7 @@ class KirtiOneOrderModel extends App_Model
 			$BalQty = $OQty + $InwardQty + $PurchQty - $PurchRtnQty - $SaleQty + $SaleRtnQty + $PrdQty - $IssueQty - $AdjQty + $InQty - $OutQty;
 			// return $batchval."=".$OQty."=".$PurchQty."=".$SaleQty;
 			if ($BalQty > 0) {
-				$new11 = array("BatchNo" => $batchval, "Stock" => $BalQty, "ExpDate" => $ExpDate, "PurchRate" => $PurchRate);
+				$new11 = array("BatchNo" => $batchval, "Stock" => $BalQty, "ExpDate" => $ExpDate, "PurchRate" => $PurchRate, "CaseQty" => $CaseQty);
 				array_push($response, $new11);
 			}
 		}
@@ -4799,7 +4800,7 @@ class KirtiOneOrderModel extends App_Model
 		$fy = $this->session->userdata('finacial_year');
 		$selected_company = $this->session->userdata('root_company');
 		if ($CategoryType == "Grocery") {
-			$Category = array('6', '8');
+			$Category = array('6', '8', '11');
 		} elseif ($CategoryType == "Non Grocery") {
 			$Category = array('1', '2', '3', '7','9','10');
 		} else {

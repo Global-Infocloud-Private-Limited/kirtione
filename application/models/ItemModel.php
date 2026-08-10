@@ -369,12 +369,12 @@
 				$this->db->select('tblK1ordermaster.*,tblK1salesmaster.ChallanID,tblK1salesmaster.OtherAmt,tblK1salesmaster.GSTIN AS PartyGST,
 				tblK1salesmaster.CashAmt,tblK1salesmaster.OnlineAmt,tblK1salesmaster.PartyBillNo,
 				tblCenterMaster.CenterName,tblCenterMaster.GSTNo,tblclients.company, tblK1salesmaster.Transdate AS InvoiceDate, tblK1salesmaster.SalesID AS InvoiceNo');
-				$this->db->join('tblK1salesmaster', 'tblK1salesmaster.OrderID = tblK1ordermaster.OrderID');
+				$this->db->join('tblK1salesmaster', 'tblK1salesmaster.OrderID = tblK1ordermaster.OrderID', 'left');
 				if(!is_admin()){
 					$this->db->join('tblstaff_wise_center', 'tblstaff_wise_center.CenterID = tblK1ordermaster.CenterID');
 					$this->db->where('tblstaff_wise_center.AccountID', $UserID);
 				}
-				$this->db->where('tblK1ordermaster.Transdate BETWEEN "'.$from_date.' 00:00:00" AND "'.$to_date.' 23:59:59"');
+				$this->db->where('tblK1salesmaster.Transdate BETWEEN "'.$from_date.' 00:00:00" AND "'.$to_date.' 23:59:59"');
 				if(!empty($data['order_status'])){
 				    
 					$this->db->where('tblK1ordermaster.OrderStatus',$data['order_status']);
@@ -412,7 +412,7 @@
 				// echo "ok";die;
 				$this->db->select('tblK1history.*,(tblK1history.BasicRate * tblK1history.BilledQty) AS ItemTotalAmt,
 				tblK1salesmaster.ChallanID,tblK1ordermaster.OrderStatus,tblK1ordermaster.BIllNo,
-				tblK1ordermaster.IsDirectSale,tblK1ordermaster.OrderPaymentType,tblK1salesmaster.GSTIN AS PartyGST,tblK1salesmaster.PartyBillNo,
+				tblK1ordermaster.IsDirectSale,tblK1ordermaster.OrderPaymentType,tblK1salesmaster.GSTIN AS PartyGST,tblK1salesmaster.PartyBillNo, tblK1salesmaster.Transdate AS InvoiceDate,
 				tblK1ordermaster.SalesID,tblCenterMaster.CenterName,tblCenterMaster.GSTNo,
 				tblproduct.ProductName,tblproduct.hsn_code,tblproduct.unit,tblproduct.PackingQty,tbltaxes.taxrate,
 				tblclients.company,tblclients.state,tblCenterMaster.state As CenterState');	
@@ -423,7 +423,7 @@
 				if(!empty($data['OrderIDs'])){
 					$this->db->where_in('tblK1ordermaster.OrderID', $data['OrderIDs']);
 				}else{
-					$this->db->where('tblK1history.TransDate BETWEEN "'.$from_date.' 00:00:00" AND "'.$to_date.' 23:59:59"');
+					$this->db->where('tblK1salesmaster.TransDate BETWEEN "'.$from_date.' 00:00:00" AND "'.$to_date.' 23:59:59"');
 				}
 				// $this->db->where('tblK1history.TransDate BETWEEN "'.$from_date.' 00:00:00" AND "'.$to_date.' 23:59:59"');
 				if(!empty($data['order_status'])){
@@ -452,7 +452,7 @@
 				$this->db->join('tbltaxes', 'tbltaxes.id = tblproduct.gst');
 				$this->db->join('tblK1ItemCategory', 'tblK1ItemCategory.id = tblproduct.Category');
 				$this->db->join('tblK1ordermaster', 'tblK1ordermaster.OrderID = tblK1history.OrderID');
-				$this->db->join('tblK1salesmaster', 'tblK1salesmaster.OrderID = tblK1ordermaster.OrderID');
+				$this->db->join('tblK1salesmaster', 'tblK1salesmaster.OrderID = tblK1ordermaster.OrderID', 'LEFT');
 				$this->db->join('tblclients', 'tblclients.AccountID = tblK1ordermaster.AccountID');
 				$this->db->join('tblCenterMaster', 'tblCenterMaster.CenterID = tblK1ordermaster.CenterID');
 				$this->db->where('tblK1ordermaster.OrderID IS NOT NULL');
