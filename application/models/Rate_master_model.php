@@ -1022,7 +1022,8 @@ class Rate_master_model extends App_Model
 
     }
 
-    public function generateNextVoucherIDNew($selected_date = '', $plant_id = '', $passage_from = ''){
+    public function generateNextVoucherIDNew($selected_date = '', $plant_id = '', $passage_from = '')
+    {
 		if(empty($selected_date)){
 		$selected_date = date('Y-m-d');
 		}

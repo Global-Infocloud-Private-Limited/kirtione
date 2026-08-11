@@ -390,9 +390,19 @@
 			manualColumnResize: true
 	};
 	var hot = new Handsontable(hotElement, hotSettings);
+	var hotRecalcLock = false;
 	hot.addHook('afterChange', function (changes, src) {
-		if (changes !== null) {
-			changes.forEach(([row, prop, oldValue, newValue]) => {
+		if (hotRecalcLock || !Array.isArray(changes) || changes.length === 0) {
+			return;
+		}
+
+		hotRecalcLock = true;
+		try {
+			changes.forEach(function (change) {
+				var row = change[0];
+				var prop = change[1];
+				var oldValue = change[2];
+				var newValue = change[3];
 				var count = 1;
 				vendor_id = $("#vendor").val();
 				if (prop == 'id') {
@@ -404,313 +414,112 @@
 						hot.setDataAtCell(row, 4, '');
 						hot.setDataAtCell(row, 5, '');
 						hot.setDataAtCell(row, 6, '');
-						hot.setDataAtCell(row, 7, '0'); // Order Pending qty
-						hot.setDataAtCell(row, 8, '0'); // qty
-						hot.setDataAtCell(row, 9, ''); // rate
-						hot.setDataAtCell(row, 10, '0'); // discount
-						hot.setDataAtCell(row, 11, '0'); // gst
-						hot.setDataAtCell(row, 12, '0'); // cgst
-						hot.setDataAtCell(row, 13, '0'); // sgst
-						hot.setDataAtCell(row, 14, '0'); // igst
+						hot.setDataAtCell(row, 7, '0');
+						hot.setDataAtCell(row, 8, '0');
+						hot.setDataAtCell(row, 9, '');
+						hot.setDataAtCell(row, 10, '0');
+						hot.setDataAtCell(row, 11, '0');
+						hot.setDataAtCell(row, 12, '0');
+						hot.setDataAtCell(row, 13, '0');
+						hot.setDataAtCell(row, 14, '0');
+						hot.setDataAtCell(row, 15, '0');
 					} else {
 						if (vendor_id == '') {
-							alert("Please Select vendor"); return false;
-						} else {
-							count++;
-							let OrderID = $('#PurchID').val();
-							$.post(admin_url + 'PurchaseMaster/GetItemDetailsPO/' + newValue + '/' + OrderID).done(function (response) {
-								response = JSON.parse(response);
-								hot.setDataAtCell(row, 1, response.hsn_code);
-								hot.setDataAtCell(row, 2, response.BrandName);
-								hot.setDataAtCell(row, 3, response.unit);
-								hot.setDataAtCell(row, 4, response.PackingQty);
-								hot.setDataAtCell(row, 5, response.PackingWeight);
-								hot.setDataAtCell(row, 6, response.unit);
-								hot.setDataAtCell(row, 7, response.POrderQty);
-								hot.setDataAtCell(row, 8, '0');
-								hot.setDataAtCell(row, 9, response.PurchRate);
-								hot.setDataAtCell(row, 10, '0');
-								hot.setDataAtCell(row, 11, response.taxrate);
-								hot.setDataAtCell(row, 12, '0');
-								hot.setDataAtCell(row, 13, '0');
-								hot.setDataAtCell(row, 14, '0');
-								count++;
-							});
+							alert("Please Select vendor");
+							return;
 						}
+						var OrderID = $('#PurchID').val();
+						$.post(admin_url + 'PurchaseMaster/GetItemDetailsPO/' + newValue + '/' + OrderID).done(function (response) {
+							response = JSON.parse(response);
+							hot.setDataAtCell(row, 1, response.hsn_code);
+							hot.setDataAtCell(row, 2, response.BrandName);
+							hot.setDataAtCell(row, 3, response.unit);
+							hot.setDataAtCell(row, 4, response.PackingQty);
+							hot.setDataAtCell(row, 5, response.PackingWeight);
+							hot.setDataAtCell(row, 6, response.unit);
+							hot.setDataAtCell(row, 7, response.POrderQty);
+							hot.setDataAtCell(row, 8, '0');
+							hot.setDataAtCell(row, 9, response.PurchRate);
+							hot.setDataAtCell(row, 10, '0');
+							hot.setDataAtCell(row, 11, response.taxrate);
+							hot.setDataAtCell(row, 12, '0');
+							hot.setDataAtCell(row, 13, '0');
+							hot.setDataAtCell(row, 14, '0');
+							hot.setDataAtCell(row, 15, '0');
+						});
 					}
-				} else if (prop == 'OrderQty' || prop == 'PurchRate') {
+				} else if (prop == 'OrderQty' || prop == 'PurchRate' || prop == 'Discount') {
 					if (prop == 'OrderQty') {
 						if (!validateOrderQtyAgainstPoLimit(hot, row, oldValue, newValue)) {
 							return;
 						}
 					}
-					let pqtyValue = hot.getDataAtCell(row, 7);
-					let qtyValue = hot.getDataAtCell(row, 8);
-					let rate = hot.getDataAtCell(row, 9);
-					let discount = hot.getDataAtCell(row, 10);
-					let unit = hot.getDataAtCell(row, 2);
-					let packingqty = hot.getDataAtCell(row, 3);
-					let saleunit = hot.getDataAtCell(row, 5);
-					let gst = hot.getDataAtCell(row, 11);
-					let statsid = $("#centername option:selected").data("statsid");
-					let vendorstate = $('#state').val();
-					if (rate && qtyValue) {
-						let amount;
+
+					var ProductName = hot.getDataAtCell(row, 0);
+					var qtyValue = hot.getDataAtCell(row, 8);
+					var rate = hot.getDataAtCell(row, 9);
+					var discount = hot.getDataAtCell(row, 10);
+					var unit = hot.getDataAtCell(row, 3);
+					var packingqty = hot.getDataAtCell(row, 4);
+					var saleunit = hot.getDataAtCell(row, 6);
+					var gst = hot.getDataAtCell(row, 11);
+					var statsid = $("#centername option:selected").data("statsid") || $("#CenterState").val();
+					var vendorstate = $('#state').val();
+
+					if (ProductName && rate && qtyValue) {
+						var amount;
 						if (unit !== saleunit && packingqty) {
-							let newRate = (rate / packingqty) * qtyValue;
-							rate = newRate
-							amount = rate;
-						}
-						else {
+							amount = (rate / packingqty) * qtyValue;
+						} else {
 							amount = rate * qtyValue;
 						}
+
 						if (discount) {
 							amount = amount - (amount * discount / 100);
 						}
-						let netAmount = amount + (amount * gst / 100);
-						netAmount = netAmount.toFixed(2);
-						let totalGST = amount * gst / 100;
-						let cgst = totalGST / 2;
-						let sgst = totalGST / 2;
-						let igst = totalGST;
-						let cgstcell = hot.getDataAtCell(row, 11);
-						let igstcell = hot.getDataAtCell(row, 13);
-						let cgstamt;
-						let sgstamt;
-						let igstamt;
+
+						var netAmount = amount + (amount * gst / 100);
+						netAmount = parseFloat(netAmount).toFixed(2);
+						var totalGST = amount * gst / 100;
+						var cgst = totalGST / 2;
+						var sgst = totalGST / 2;
+						var igst = totalGST;
+						var cgstamt;
+						var sgstamt;
+						var igstamt;
+
 						if (vendorstate == statsid) {
 							cgstamt = cgst;
 							sgstamt = sgst;
 							igstamt = 0.00;
-						}
-						else if (vendorstate != statsid) {
+						} else if (vendorstate != statsid) {
 							cgstamt = 0.00;
 							sgstamt = 0.00;
 							igstamt = igst;
 						}
-						hot.setDataAtCell(row, 12, parseFloat(cgstamt));
-						hot.setDataAtCell(row, 13, parseFloat(sgstamt));
-						hot.setDataAtCell(row, 14, parseFloat(igstamt));
-						hot.setDataAtCell(row, 15, parseFloat(netAmount));
+
+						hot.setDataAtCell(row, 12, parseFloat(cgstamt).toFixed(2));
+						hot.setDataAtCell(row, 13, parseFloat(sgstamt).toFixed(2));
+						hot.setDataAtCell(row, 14, parseFloat(igstamt).toFixed(2));
+						hot.setDataAtCell(row, 15, parseFloat(netAmount).toFixed(2));
 					}
 				}
-				else if (prop == 'Discount') {
-					let pqtyValue = hot.getDataAtCell(row, 7);
-					let qtyValue = hot.getDataAtCell(row, 8);
-					let rate = hot.getDataAtCell(row, 9);
-					let discount = hot.getDataAtCell(row, 10);
-					//hot.setDataAtCell(row, 8, discount); 
-					let unit = hot.getDataAtCell(row, 2);
-					let packingqty = hot.getDataAtCell(row, 3);
-					let saleunit = hot.getDataAtCell(row, 5);
-					let gst = hot.getDataAtCell(row, 11);
-					let statsid = $("#centername option:selected").data("statsid");
-					let vendorstate = $('#state').val();
-					if (rate && qtyValue) {
-						let amount;
-						if (unit !== saleunit && packingqty) {
-							let newRate = (rate / packingqty) * qtyValue;
-							rate = newRate
-							amount = rate;
-						}
-						else {
-							amount = rate * qtyValue;
-						}
-						if (discount) {
-							amount = amount - (amount * discount / 100);
-						}
-						let netAmount = amount + (amount * gst / 100);
-						netAmount = netAmount.toFixed(2);
-						let totalGST = amount * gst / 100;
-						let cgst = totalGST / 2;
-						let sgst = totalGST / 2;
-						let igst = totalGST;
-						let cgstcell = hot.getDataAtCell(row, 11);
-						let igstcell = hot.getDataAtCell(row, 13);
-						let cgstamt;
-						let sgstamt;
-						let igstamt;
-						if (vendorstate == statsid) {
-							cgstamt = cgst;
-							sgstamt = sgst;
-							igstamt = 0.00;
-						}
-						else if (vendorstate != statsid) {
-							cgstamt = 0.00;
-							sgstamt = 0.00;
-							igstamt = igst;
-						}
-						hot.setDataAtCell(row, 12, parseFloat(cgstamt));
-						hot.setDataAtCell(row, 13, parseFloat(sgstamt));
-						hot.setDataAtCell(row, 14, parseFloat(igstamt));
-						hot.setDataAtCell(row, 15, parseFloat(netAmount));
-					}
-				}
-				calculateTotalQuantity();
-				calaulateSubTotal();
-				calculateTotalDiscount();
-				calculateTotalValue();
-				calculateTotalCgstAmt();
-				calculateTotalSgstAmt();
-				calculateTotalIgstAmt();
-				calculateTotalNetAmount();
 			});
+
+			calculateTotalQuantity();
+			calaulateSubTotal();
+			calculateTotalDiscount();
+			calculateTotalValue();
+			calculateTotalCgstAmt();
+			calculateTotalSgstAmt();
+			calculateTotalIgstAmt();
+			calculateTotalNetAmount();
+		} finally {
+			hotRecalcLock = false;
 		}
 	});
-	hot.addHook('afterChange', function (changes, src) {
-		if (changes !== null) {
-			changes.forEach(([row, prop, oldValue, newValue]) => {
-				var count = 1;
-				vendor_id = $("#vendor").val();
-				if (prop == 'id') {
-					vendor_id = $("#vendor").val();
-					if (newValue == null) {
-						hot.setDataAtCell(row, 1, '');
-						hot.setDataAtCell(row, 2, '');
-						hot.setDataAtCell(row, 3, '');
-						hot.setDataAtCell(row, 4, '');
-						hot.setDataAtCell(row, 5, '');
-						hot.setDataAtCell(row, 6, '');
-						hot.setDataAtCell(row, 7, '');
-						hot.setDataAtCell(row, 8, '');
-						hot.setDataAtCell(row, 9, '');
-						hot.setDataAtCell(row, 10, '');
-						hot.setDataAtCell(row, 11, '');
-						hot.setDataAtCell(row, 12, '');
-						hot.setDataAtCell(row, 13, '');
-						hot.setDataAtCell(row, 14, '');
-						hot.setDataAtCell(row, 15, '');
-					}
-				} else if (prop == 'OrderQty' || prop == 'PurchRate') {
-					if (prop == 'OrderQty') {
-						if (!validateOrderQtyAgainstPoLimit(hot, row, oldValue, newValue)) {
-							return;
-						}
-						// if (hot.getDataAtCell(row, 7) > oldValue) {
-						// 	hot.setDataAtCell(row, 7, oldValue);
-						// 	alert('Qty Should Be Less Then Or Equals To Previous Qty');
-						// 	return;
-						// }
-					}
-					// 	if(prop == 'PurchRate'){
-					// 		if(parseFloat(hot.getDataAtCell(row, 8)) > parseFloat(oldValue)){
-					// 			hot.setDataAtCell(row, 8, oldValue);
-					// 			alert('Rate Should Be Less Then Or Equals To Previous Rate');
-					// 			return;
-					// 		}
-					// 	}
-					let ProductName = hot.getDataAtCell(row, 0);
-					let pqtyValue = hot.getDataAtCell(row, 7);
-					let qtyValue = hot.getDataAtCell(row, 8);
-					let rate = hot.getDataAtCell(row, 9);
-					let discount = hot.getDataAtCell(row, 10);
-					//hot.setDataAtCell(row, 8, discount); 
-					let unit = hot.getDataAtCell(row, 3);
-					let packingqty = hot.getDataAtCell(row, 4);
-					let saleunit = hot.getDataAtCell(row, 6);
-					let gst = hot.getDataAtCell(row, 11);
-					let statsid = $("#CenterState").val();
-					let vendorstate = $('#state').val();
-					if (ProductName) {
-						let amount;
-						if (unit !== saleunit && packingqty) {
-							let newRate = (rate / packingqty) * qtyValue;
-							rate = newRate
-							amount = rate;
-						} else {
-							amount = rate * qtyValue;
-						}
-						var discountPercent = 0;
-						if (discount) {
-							discount = discount * qtyValue;
-							// amount = amount - (amount * discount / 100);
-							discountPercent = (discount / amount) * 100;
-							amount = amount - discount;
-						}
-						let netAmount = amount + (amount * gst / 100);
-						netAmount = netAmount.toFixed(2);
-						let totalGST = amount * gst / 100;
-						let cgst = totalGST / 2;
-						let sgst = totalGST / 2;
-						let igst = totalGST;
-						let cgstamt;
-						let sgstamt;
-						let igstamt;
-						if (vendorstate == statsid) {
-							cgstamt = cgst;
-							sgstamt = sgst;
-							igstamt = 0.00;
-						} else if (vendorstate != statsid) {
-							cgstamt = 0.00;
-							sgstamt = 0.00;
-							igstamt = igst;
-						}
-						hot.setDataAtCell(row, 12, parseFloat(cgstamt).toFixed(2));
-						hot.setDataAtCell(row, 13, parseFloat(sgstamt).toFixed(2));
-						hot.setDataAtCell(row, 14, parseFloat(igstamt).toFixed(2));
-						hot.setDataAtCell(row, 15, parseFloat(netAmount).toFixed(2));
-					}
-				} else if (prop == 'Discount') {
-					let pqtyValue = hot.getDataAtCell(row, 7);
-					let qtyValue = hot.getDataAtCell(row, 8);
-					let rate = hot.getDataAtCell(row, 9);
-					let discount = hot.getDataAtCell(row, 11);
-					let unit = hot.getDataAtCell(row, 3);
-					let packingqty = hot.getDataAtCell(row, 4);
-					let saleunit = hot.getDataAtCell(row, 6);
-					let gst = hot.getDataAtCell(row, 10);
-					let statsid = $("#CenterState").val();
-					let vendorstate = $('#state').val();
-					if (rate && qtyValue) {
-						let amount;
-						if (unit !== saleunit && packingqty) {
-							let newRate = (rate / packingqty) * qtyValue;
-							rate = newRate
-							amount = rate;
-						} else {
-							amount = rate * qtyValue;
-						}
-						var discountPercent = 0;
-						if (discount) {
-							discount = discount * qtyValue;
-							// amount = amount - (amount * discount / 100);
-							discountPercent = (discount / amount) * 100;
-							amount = amount - discount;
-						}
-						let netAmount = amount + (amount * gst / 100);
-						netAmount = netAmount.toFixed(2);
-						let totalGST = amount * gst / 100;
-						let cgst = totalGST / 2;
-						let sgst = totalGST / 2;
-						let igst = totalGST;
-						let cgstamt;
-						let sgstamt;
-						let igstamt;
-						if (vendorstate == statsid) {
-							cgstamt = cgst;
-							sgstamt = sgst;
-							igstamt = 0.00;
-						} else if (vendorstate != statsid) {
-							cgstamt = 0.00;
-							sgstamt = 0.00;
-							igstamt = igst;
-						}
-						hot.setDataAtCell(row, 12, parseFloat(cgstamt).toFixed(2));
-						hot.setDataAtCell(row, 13, parseFloat(sgstamt).toFixed(2));
-						hot.setDataAtCell(row, 14, parseFloat(igstamt).toFixed(2));
-						hot.setDataAtCell(row, 15, parseFloat(netAmount).toFixed(2));
-					}
-				}
-				calculateTotalQuantity();
-				calaulateSubTotal();
-				calculateTotalDiscount();
-				calculateTotalValue();
-				calculateTotalCgstAmt();
-				calculateTotalSgstAmt();
-				calculateTotalIgstAmt();
-				calculateTotalNetAmount();
-			});
-		}
+	$('.save_detail').on('click', function () {
+		$('input[name="pur_order_detail"]').val(JSON.stringify(hot.getData()));
 	});
 	hot.addHook('afterBeginEditing', function (row, col) {
 		if (col === 16) {
@@ -728,12 +537,6 @@
 		}
 		return true;
 	}
-	$('.save_detail').on('click', function () {
-		$('input[name="pur_order_detail"]').val(JSON.stringify(hot.getData()));
-	});
-	$('.save_detail').on('click', function () {
-		$('input[name="pur_order_detail"]').val(JSON.stringify(hot.getData()));
-	});
 	function customRenderer(instance, td, row, col, prop, value, cellProperties) {
 		"use strict";
 		Handsontable.renderers.TextRenderer.apply(this, arguments);

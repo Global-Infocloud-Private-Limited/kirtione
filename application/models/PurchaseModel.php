@@ -2043,7 +2043,7 @@ class PurchaseModel extends App_Model
         $CenterID = $InvData->CenterID;
         $Transdate = substr($InvData->Inv_date, 0, 19);
         $ItCount = count($es_detail);
-        $nextPaymentnumber = get_option("next_payment_number_for_kirti");
+        // $nextPaymentnumber = get_option("next_payment_number_for_kirti");
         if ($PurchaseType == 2) {
             $PaymentMode    = null;
             $Effecton       = null;
@@ -2051,7 +2051,7 @@ class PurchaseModel extends App_Model
             $Refno          = null;
         }
         if ($PurchaseType == 1) {
-            $PaymentNo = $nextPaymentnumber;
+            $PaymentNo = $this->generateNextVoucherIDNew($Transdate, $selected_company, 'PAYMENTS');
         } else {
             $PaymentNo = null;
         }
@@ -3959,6 +3959,618 @@ class PurchaseModel extends App_Model
         }
         return true;
     }
+    
+    public function UpdateInvoiceLedger($data, $id)
+    {
+        $selected_company = $this->session->userdata("root_company");
+        $fy = $this->session->userdata("finacial_year");
+        if (isset($data["pur_order_detail"])) {
+            $pur_order_detail = json_decode($data["pur_order_detail"]);
+            unset($data["pur_order_detail"]);
+            $es_detail = [];
+            $row = [];
+            $rq_val = [];
+            $header = [];
+            $header[] = "ItemID";
+            $header[] = "HSN";
+            $header[] = "Brand";
+            $header[] = "MeasuredIn";
+            $header[] = "PackingQty";
+            $header[] = "PackingWeight";
+            $header[] = "PurchaseUnit";
+            $header[] = "Qty";
+            $header[] = "PurchRate";
+            $header[] = "Discount";
+            $header[] = "GST";
+            $header[] = "CGSTAMT";
+            $header[] = "SGSTAMT";
+            $header[] = "IGSTAMT";
+            $header[] = "total_money";
+            foreach ($pur_order_detail as $key => $value) {
+                if ($value[0] != "") {
+                    $es_detail[] = array_combine($header, $value);
+                }
+            }
+        }
+        $Inv_No         = $id;
+        $VendorID       = $data["vendor"];
+        $VendorDocNo    = $data["VendorDocNo"];
+        $State          = $data["state"];
+        $PurchaseType   = $data["purchasetype"];
+        $PaymentMode    = $data["paymode"];
+        $PaymentMethod  = $data["paymentmethod"];
+        $Refno          = $data["referenceno"];
+        $Effecton       = $data["Effecton"];
+        $ExpenceType    = $data["expense_type"];
+        $ExpenceAmt     = $data["expense_amt"];
+        $IncomeType     = $data["income_type"];
+        $IncomeAmt      = $data["income_amt"];
+        $PurchAmt       = $data["total_amt_in_mt"];
+        $discountAMT    = $data["total_disc_in_mt"];
+        $cgstamt        = $data["total_cgst_amt"];
+        $sgstamt        = $data["total_sgst_amt"];
+        $igstamt        = $data["total_igst_amt"];
+        $roundoffamt    = $data["total_roundoff_amt"];
+        $invoiceamt     = $data["netpayableamt"];
+
+        $InvData = $this->GetPurchaseInvoiceDetails($Inv_No);
+        // echo '<pre>';
+        // print_r($es_detail);
+        // die;
+
+        $CenterID = $InvData->CenterID;
+        $Transdate = substr($InvData->Inv_date, 0, 19);
+        $ItCount = count($es_detail);
+        // $nextPaymentnumber = get_option("next_payment_number_for_kirti");
+        if ($PurchaseType == 2) {
+            $PaymentMode = null;
+            $Effecton = null;
+            $PaymentMethod = null;
+            $Refno = null;
+        }
+        if ($PurchaseType == 1) {
+            $PaymentNo = $this->generateNextVoucherIDNew($Transdate, $selected_company, 'PAYMENTS');
+        } else {
+            $PaymentNo = null;
+        }
+
+        // rate update code new ============
+        foreach ($es_detail as $value) {
+            $productId = $value["ItemID"];
+            $qty = $value["Qty"];
+            $PurchRate = $value["PurchRate"];
+            $gst = $value["GST"];
+            $salerate = $PurchRate + $PurchRate * ($gst / 100);
+            $ItemAmt = $qty * $PurchRate;
+            $ItemDisc = 0;
+            $DiscPer = 0;
+            $UnitDisc = 0;
+            if ($value["Discount"] > 0 && $qty > 0) {
+                $ItemDisc = $value["Discount"] * $qty;
+                $UnitDisc = $value["Discount"];
+                $DiscPer = ($value["Discount"] / $PurchRate) * 100;
+            }
+            $ItemTaxableAmt = $ItemAmt - $ItemDisc;
+            $ItemGSTAmt = $ItemTaxableAmt * ($gst / 100);
+            // $CGSTPer = null;
+            // $SGSTPer = null;
+            // $IGSTPer = null;
+            // $CGSTAmt = 0;
+            // $SGSTAmt = 0;
+            // $IGSTAmt = 0;
+            // if ($CenterState == $State) {
+            //     $CGSTPer = $gst / 2;
+            //     $SGSTPer = $gst / 2;
+            //     $CGSTAmt = $ItemGSTAmt / 2;
+            //     $SGSTAmt = $ItemGSTAmt / 2;
+            // } else {
+            //     $IGSTPer = $gst;
+            //     $IGSTAmt = $ItemGSTAmt;
+            // }
+
+            $data_array_result = [
+                "PurchRate" => $PurchRate,
+                "SaleRate" => $salerate,
+                "BasicRate" => $PurchRate,
+                "DiscPerc" => $DiscPer,
+                "DiscAmt" => $UnitDisc,
+                "OrderAmt" => $ItemAmt,
+                "ChallanAmt" => $ItemAmt,
+                "UserID2" => $_SESSION["username"],
+                "Lupdate" => date("Y-m-d H:i:s"),
+            ];
+            $this->db->where([
+                "TransID" => $Inv_No,
+                "OrderQty" => $qty,
+                "ItemID" => $productId,
+                "AccountID" => $VendorID,
+                // "BatchNo" => $value["BatchNo"]
+            ]);
+            $this->db->update(db_prefix() . "K1history", $data_array_result);
+        }
+        // rate update code new ============
+        
+        $this->db->select("tblK1purchasemaster.*");
+        $this->db->from(db_prefix() . "K1purchasemaster");
+        $this->db->where(db_prefix() . "K1purchasemaster.Inv_No", $Inv_No);
+        $purchaselist = $this->db->get()->row();
+        $data_array = [
+            "Is_Ledger" => "Y",
+            "OrderStatus" => "F",
+            "InvoiceNo" => $VendorDocNo,
+            "PaymentNo" => $PaymentNo,
+            "PurchaseType" => $PurchaseType,
+            "PaymentMode" => $PaymentMode,
+            "PaymentMethod" => $PaymentMethod,
+            "RefNo" => $Refno,
+			"Invamt" => $invoiceamt,
+            "EffectOn" => $Effecton,
+            "ItCount" => $ItCount,
+            "Lupdate" => date("Y-m-d H:i:s"),
+            "UserID2" => $this->session->userdata("username"),
+        ];
+        $this->db->where("PlantID", $selected_company);
+        $this->db->LIKE("FY", $fy);
+        $this->db->where("Inv_No", $Inv_No);
+        $this->db->update(db_prefix() . "K1purchasemaster", $data_array);
+        if ($this->db->affected_rows() > 0) {
+            // save expense entry
+            if(count($ExpenceType) > 0){
+                for($i=0; $i<count($ExpenceType); $i++){
+                    if(empty($ExpenceAmt[$i]) || $ExpenceAmt[$i] == 0){
+                        continue;
+                    }
+                    $expence_entry = [
+                        "PlantID" => $selected_company,
+                        "FY" => $fy,
+                        "Transdate" => $Transdate,
+                        "UserID" => $_SESSION["username"],
+                        "Inv_No" => $Inv_No,
+                        "LedgerCategory" => 'Direct Expense',
+                        "LedgerType" => $ExpenceType[$i],
+                        "Amount" => $ExpenceAmt[$i],
+                    ];
+                    $where = [
+                        "PlantID" => $selected_company,
+                        "FY" => $fy,
+                        "Inv_No" => $Inv_No,
+                        "LedgerCategory" => 'Direct Expense',
+                        "LedgerType" => $ExpenceType[$i],
+                    ];
+                    if($this->db->get_where(db_prefix() . "K1PurchaseMasterExpenses", $where)->num_rows() > 0){
+                        $this->db->where($where);
+                        $this->db->update(db_prefix() . "K1PurchaseMasterExpenses", $expence_entry);
+                    }else{
+                        $this->db->insert(db_prefix() . "K1PurchaseMasterExpenses", $expence_entry);
+                    }
+                }
+                // delete expense entry
+                $this->db->where("PlantID", $selected_company);
+                $this->db->where("FY", $fy);
+                $this->db->where("Inv_No", $Inv_No);
+                $this->db->where("LedgerCategory", 'Direct Expense');
+                $this->db->where_not_in("LedgerType", $ExpenceType);
+                $this->db->delete(db_prefix() . "K1PurchaseMasterExpenses");
+            }
+            // save income entry
+            if(count($IncomeType) > 0){
+                for($i=0; $i<count($IncomeType); $i++){
+                    if(empty($IncomeAmt[$i]) || $IncomeAmt[$i] == 0){
+                        continue;
+                    }
+                    $income_entry = [
+                        "PlantID" => $selected_company,
+                        "FY" => $fy,
+                        "Transdate" => $Transdate,
+                        "UserID" => $_SESSION["username"],
+                        "Inv_No" => $Inv_No,
+                        "LedgerCategory" => 'Direct Income',
+                        "LedgerType" => $IncomeType[$i],
+                        "Amount" => $IncomeAmt[$i],
+                    ];
+                    $where = [
+                        "PlantID" => $selected_company,
+                        "FY" => $fy,
+                        "Inv_No" => $Inv_No,
+                        "LedgerCategory" => 'Direct Income',
+                        "LedgerType" => $IncomeType[$i],
+                    ];
+                    // echo print_r($income_entry); die;
+                    if($this->db->get_where(db_prefix() . "K1PurchaseMasterExpenses", $where)->num_rows() > 0){
+                        $this->db->where($where);
+                        $this->db->update(db_prefix() . "K1PurchaseMasterExpenses", $income_entry);
+                    }else{
+                        $this->db->insert(db_prefix() . "K1PurchaseMasterExpenses", $income_entry);
+                    }
+                }
+                // delete income entry
+                $this->db->where("PlantID", $selected_company);
+                $this->db->where("FY", $fy);
+                $this->db->where("Inv_No", $Inv_No);
+                $this->db->where("LedgerCategory", 'Direct Income');
+                $this->db->where_not_in("LedgerType", $IncomeType);
+                $this->db->delete(db_prefix() . "K1PurchaseMasterExpenses");
+            }
+            // Move Ledger data from ledger table to ledger history table
+            $GetLedgerList = $this->GetLedgerListByVoucher($Inv_No);
+            $GetLedgerListByPaymentNo = $this->GetLedgerListByPayment(
+                $purchaselist->PaymentNo
+            );
+            foreach ($GetLedgerList as $key => $val) {
+                $ledger_audit = [
+                    "PlantID" => $val["PlantID"],
+                    "FY" => $val["FY"],
+                    "Transdate" => $val["Transdate"],
+                    "TransDate2" => $val["TransDate2"],
+                    "VoucherID" => $val["VoucherID"],
+                    "PartyID" => $val["PartyID"],
+                    "AccountID" => $val["AccountID"],
+                    "CounterAccount" => $val["CounterAccount"],
+                    "CenterID" => $val["CenterID"],
+                    "CommodityID" => $val["CommodityID"],
+                    "EntryFor" => $val["EntryFor"],
+                    "TType" => $val["TType"],
+                    "Amount" => $val["Amount"],
+                    "Narration" => $val["Narration"],
+                    "PassedFrom" => $val["PassedFrom"],
+                    "OrdinalNo" => $val["OrdinalNo"],
+                    "UserID" => $val["UserID"],
+                    "Lupdate" => date("Y-m-d H:i:s"),
+                    "UserID2" => $this->session->userdata("username"),
+                ];
+                $this->db->insert(
+                    db_prefix() . "accountledgeraudit",
+                    $ledger_audit
+                );
+            }
+            foreach ($GetLedgerListByPaymentNo as $key => $val1) {
+                $ledger_auditPayment = [
+                    "PlantID" => $val1["PlantID"],
+                    "FY" => $val1["FY"],
+                    "Transdate" => $val1["Transdate"],
+                    "TransDate2" => $val1["TransDate2"],
+                    "VoucherID" => $val1["VoucherID"],
+                    "PartyID" => $val1["PartyID"],
+                    "AccountID" => $val1["AccountID"],
+                    "CounterAccount" => $val1["CounterAccount"],
+                    "CenterID" => $val1["CenterID"],
+                    "CommodityID" => $val1["CommodityID"],
+                    "EntryFor" => $val1["EntryFor"],
+                    "TType" => $val1["TType"],
+                    "Amount" => $val1["Amount"],
+                    "Narration" => $val1["Narration"],
+                    "PassedFrom" => $val1["PassedFrom"],
+                    "OrdinalNo" => $val1["OrdinalNo"],
+                    "UserID" => $val1["UserID"],
+                    "Lupdate" => date("Y-m-d H:i:s"),
+                    "UserID2" => $this->session->userdata("username"),
+                ];
+                $this->db->insert(
+                    db_prefix() . "accountledgeraudit",
+                    $ledger_auditPayment
+                );
+            }
+            // Delete Previous ledger data
+            $this->db->where("PlantID", $selected_company);
+            $this->db->where("FY", $fy);
+            $this->db->where("VoucherID", $Inv_No);
+            $this->db->delete(db_prefix() . "accountledger");
+            $this->db->where("PlantID", $selected_company);
+            $this->db->where("FY", $fy);
+            $this->db->where("VoucherID", $purchaselist->PaymentNo);
+            $this->db->where("PassedFrom", "PAYMENTS");
+            $this->db->delete(db_prefix() . "accountledger");
+            //Ledger entry code
+            $ord_n = 1;
+            $narrations = "By Purchase no." . $Inv_No;
+            // Credit to Vendor
+            $ledger_credit = [
+                "PlantID" => $selected_company,
+                "FY" => $fy,
+                "Transdate" => $Transdate,
+                "TransDate2" => date("Y-m-d H:i:s"),
+                "VoucherID" => $Inv_No,
+                "PartyID" => "KASPL",
+                "AccountID" => $VendorID,
+                "CounterAccount" => "PURCH",
+                "CenterID" => $CenterID,
+                "EntryFor" => "2",
+                "TType" => "C",
+                "Amount" => $invoiceamt,
+                "Narration" => $narrations,
+                "PassedFrom" => "PURCHASE",
+                "OrdinalNo" => $ord_n,
+                "UserID" => $_SESSION["username"],
+            ];
+            $this->db->insert(db_prefix() . "accountledger", $ledger_credit);
+            $ord_n++;
+            // Debit to Purchase Account
+            $ledger_debit = [
+                "PlantID" => $selected_company,
+                "FY" => $fy,
+                "Transdate" => $Transdate,
+                "TransDate2" => date("Y-m-d H:i:s"),
+                "VoucherID" => $Inv_No,
+                "PartyID" => "KASPL",
+                "AccountID" => "PURCH",
+                "CounterAccount" => $VendorID,
+                "CenterID" => $CenterID,
+                "EntryFor" => "2",
+                "TType" => "D",
+                "Amount" => $PurchAmt,
+                "Narration" => $narrations,
+                "PassedFrom" => "PURCHASE",
+                "OrdinalNo" => $ord_n,
+                "UserID" => $_SESSION["username"],
+            ];
+            $this->db->insert(db_prefix() . "accountledger", $ledger_debit);
+            $ord_n++;
+            //Debit to Tax Account
+            if ($cgstamt != 0.0 && $sgstamt != 0.0) {
+                //CGST Tax Ledger Entry
+                $Cgst_Ledger_entry = [
+                    "PlantID" => $selected_company,
+                    "FY" => $fy,
+                    "Transdate" => $Transdate,
+                    "TransDate2" => date("Y-m-d H:i:s"),
+                    "VoucherID" => $Inv_No,
+                    "PartyID" => "KASPL",
+                    "AccountID" => "CGST",
+                    "CounterAccount" => $VendorID,
+                    "CenterID" => $CenterID,
+                    "EntryFor" => "2",
+                    "TType" => "D",
+                    "Amount" => $data["total_cgst_amt"],
+                    "Narration" => $narrations,
+                    "PassedFrom" => "PURCHASE",
+                    "OrdinalNo" => $ord_n,
+                    "UserID" => $_SESSION["username"],
+                ];
+                $CgstLedgerEntry = $this->db->insert(
+                    db_prefix() . "accountledger",
+                    $Cgst_Ledger_entry
+                );
+                $ord_n++;
+                //SGST Tax Ledger Entry
+                $Sgst_Ledger_entry = [
+                    "PlantID" => $selected_company,
+                    "FY" => $fy,
+                    "Transdate" => $Transdate,
+                    "TransDate2" => date("Y-m-d H:i:s"),
+                    "VoucherID" => $Inv_No,
+                    "PartyID" => "KASPL",
+                    "AccountID" => "SGST",
+                    "CounterAccount" => $VendorID,
+                    "CenterID" => $CenterID,
+                    "EntryFor" => "2",
+                    "TType" => "D",
+                    "Amount" => $data["total_sgst_amt"],
+                    "Narration" => $narrations,
+                    "PassedFrom" => "PURCHASE",
+                    "OrdinalNo" => $ord_n,
+                    "UserID" => $_SESSION["username"],
+                ];
+                $SgstLedgerEntry = $this->db->insert(
+                    db_prefix() . "accountledger",
+                    $Sgst_Ledger_entry
+                );
+                $ord_n++;
+            } elseif ($igstamt != 0.0) {
+                //Igst Ledger Entry
+                $Igst_Ledger_Entry = [
+                    "PlantID" => $selected_company,
+                    "FY" => $fy,
+                    "Transdate" => $Transdate,
+                    "TransDate2" => date("Y-m-d H:i:s"),
+                    "VoucherID" => $Inv_No,
+                    "PartyID" => "KASPL",
+                    "AccountID" => "IGST",
+                    "CounterAccount" => $VendorID,
+                    "CenterID" => $CenterID,
+                    "EntryFor" => "2",
+                    "TType" => "D",
+                    "Amount" => $data["total_igst_amt"],
+                    "Narration" => $narrations,
+                    "PassedFrom" => "PURCHASE",
+                    "OrdinalNo" => $ord_n,
+                    "UserID" => $_SESSION["username"],
+                ];
+                $IgstLedgerEntry = $this->db->insert(
+                    db_prefix() . "accountledger",
+                    $Igst_Ledger_Entry
+                );
+                $ord_n++;
+            }
+            $ord_n++;
+            // expense ledger entry
+            if(count($ExpenceType) > 0){
+                for($i=0; $i<count($ExpenceType); $i++){
+                    if(empty($ExpenceAmt[$i]) || $ExpenceAmt[$i] == 0){
+                        continue;
+                    }
+                    $ExpenceLedgerEntry = [
+                        "PlantID" => $selected_company,
+                        "FY" => $fy,
+                        "Transdate" => $Transdate,
+                        "TransDate2" => date("Y-m-d H:i:s"),
+                        "VoucherID" => $Inv_No,
+                        "PartyID" => "KASPL",
+                        "AccountID" => $ExpenceType[$i],
+                        "CounterAccount" => $VendorID,
+                        "CenterID" => $CenterID,
+                        "EntryFor" => "2",
+                        "TType" => "D",
+                        "Amount" => $ExpenceAmt[$i],
+                        "Narration" => $narrations,
+                        "PassedFrom" => "PURCHASE",
+                        "OrdinalNo" => $ord_n,
+                        "UserID" => $_SESSION["username"],
+                    ];
+                    $ExpenseLedgerEntry = $this->db->insert(db_prefix() . "accountledger", $ExpenceLedgerEntry);
+                    $ord_n++;
+                }
+            }
+            // income ledger entry
+            if(count($IncomeType) > 0){
+                for($i=0; $i<count($IncomeType); $i++){
+                    if(empty($IncomeAmt[$i]) || $IncomeAmt[$i] == 0){
+                        continue;
+                    }
+                    $IncomeLedgerEntry = [
+                        "PlantID" => $selected_company,
+                        "FY" => $fy,
+                        "Transdate" => $Transdate,
+                        "TransDate2" => date("Y-m-d H:i:s"),
+                        "VoucherID" => $Inv_No,
+                        "PartyID" => "KASPL",
+                        "AccountID" => $IncomeType[$i],
+                        "CounterAccount" => $VendorID,
+                        "CenterID" => $CenterID,
+                        "EntryFor" => "2",
+                        "TType" => "C",
+                        "Amount" => $IncomeAmt[$i],
+                        "Narration" => $narrations,
+                        "PassedFrom" => "PURCHASE",
+                        "OrdinalNo" => $ord_n,
+                        "UserID" => $_SESSION["username"],
+                    ];
+                    $IncomeLedgerEntry = $this->db->insert(db_prefix() . "accountledger", $IncomeLedgerEntry);
+                    $ord_n++;
+                }
+            }
+            //Debit to Discount Ledger Entry
+            if ($discountAMT > 0) {
+                $disc_ledger_entry = [
+                    "PlantID" => $selected_company,
+                    "FY" => $fy,
+                    "Transdate" => $Transdate,
+                    "TransDate2" => date("Y-m-d H:i:s"),
+                    "VoucherID" => $Inv_No,
+                    "PartyID" => "KASPL",
+                    "AccountID" => "DISC",
+                    "CounterAccount" => $VendorID,
+                    "CenterID" => $CenterID,
+                    "EntryFor" => "2",
+                    "TType" => "C",
+                    "Amount" => $discountAMT,
+                    "Narration" => $narrations,
+                    "PassedFrom" => "PURCHASE",
+                    "OrdinalNo" => $ord_n,
+                    "UserID" => $_SESSION["username"],
+                ];
+                $DiscountLedgerEntry = $this->db->insert(
+                    db_prefix() . "accountledger",
+                    $disc_ledger_entry
+                );
+                $ord_n++;
+            }
+            //Debit to RoundAmt Ledger Entry
+            if ($roundoffamt >= 0) {
+                $roundledgerentry_debit = [
+                    "PlantID" => $selected_company,
+                    "FY" => $fy,
+                    "Transdate" => $Transdate,
+                    "TransDate2" => date("Y-m-d H:i:s"),
+                    "VoucherID" => $Inv_No,
+                    "PartyID" => "KASPL",
+                    "AccountID" => "ROUNDOFF",
+                    "CounterAccount" => $VendorID,
+                    "CenterID" => $CenterID,
+                    "EntryFor" => "2",
+                    "TType" => "C",
+                    "Amount" => $roundoffamt,
+                    "Narration" => $narrations,
+                    "PassedFrom" => "PURCHASE",
+                    "OrdinalNo" => $ord_n,
+                    "UserID" => $_SESSION["username"],
+                ];
+                $Round_Debit_LedgerEntry = $this->db->insert(
+                    db_prefix() . "accountledger",
+                    $roundledgerentry_debit
+                );
+                $ord_n++;
+            } else {
+                $amt = abs($roundoffamt);
+                $roundledgerentry_credit = [
+                    "PlantID" => $selected_company,
+                    "FY" => $fy,
+                    "Transdate" => $Transdate,
+                    "TransDate2" => date("Y-m-d H:i:s"),
+                    "VoucherID" => $Inv_No,
+                    "PartyID" => "KASPL",
+                    "AccountID" => "ROUNDOFF",
+                    "CounterAccount" => $VendorID,
+                    "CenterID" => $CenterID,
+                    "EntryFor" => "2",
+                    "TType" => "D",
+                    "Amount" => $amt,
+                    "Narration" => $narrations,
+                    "PassedFrom" => "PURCHASE",
+                    "OrdinalNo" => $ord_n,
+                    "UserID" => $_SESSION["username"],
+                ];
+                $Round_credit_LedgerEntry = $this->db->insert(
+                    db_prefix() . "accountledger",
+                    $roundledgerentry_credit
+                );
+                $ord_n++;
+            }
+            //$nextPaymentnumber = get_option('next_payment_number_for_kirti');
+            if ($PurchaseType == 1) {
+                $ordinalno = 1;
+                //Payment Voucher Debit Entry to Company
+                $paymententry_Debit_tocompany = [
+                    "PlantID" => $selected_company,
+                    "FY" => $fy,
+                    "Transdate" => $Transdate,
+                    "TransDate2" => date("Y-m-d H:i:s"),
+                    "VoucherID" => $PaymentNo,
+                    "PartyID" => "KASPL",
+                    "AccountID" => $VendorID,
+                    "CounterAccount" => $Effecton,
+                    "CenterID" => $CenterID,
+                    "EntryFor" => "2",
+                    "TType" => "D",
+                    "Amount" => $invoiceamt,
+                    "Narration" => $narrations,
+                    "PassedFrom" => "PAYMENTS",
+                    "OrdinalNo" => $ordinalno,
+                    "UserID" => $_SESSION["username"],
+                ];
+                $DebitToCompany = $this->db->insert(
+                    db_prefix() . "accountledger",
+                    $paymententry_Debit_tocompany
+                );
+                $ordinalno++;
+                //Payment Voucher Credit Entry to Vendor
+                $paymententry_Credit_tovendor = [
+                    "PlantID" => $selected_company,
+                    "FY" => $fy,
+                    "Transdate" => $Transdate,
+                    "TransDate2" => date("Y-m-d H:i:s"),
+                    "VoucherID" => $PaymentNo,
+                    "PartyID" => "KASPL",
+                    "AccountID" => $Effecton,
+                    "CounterAccount" => $VendorID,
+                    "CenterID" => $CenterID,
+                    "EntryFor" => "2",
+                    "TType" => "C",
+                    "Amount" => $invoiceamt,
+                    "Narration" => $narrations,
+                    "PassedFrom" => "PAYMENTS",
+                    "OrdinalNo" => $ordinalno,
+                    "UserID" => $_SESSION["username"],
+                ];
+                $CreditToVendor = $this->db->insert(
+                    db_prefix() . "accountledger",
+                    $paymententry_Credit_tovendor
+                );
+                $this->increment_next_number("next_payment_number_for_kirti");
+            }
+        }
+        return true;
+    }
+
     public function UpdateKirtiOnePurchaseInvoiceLedger($data, $id)
     {
         $selected_company = $this->session->userdata("root_company");
@@ -4664,6 +5276,119 @@ class PurchaseModel extends App_Model
             return false;
         }
     }
+    
+    public function CancelPurchaseInvoiceByPIID($PurchInvoiceID)
+    {
+        $selected_company = $this->session->userdata("root_company");
+        $fy = $this->session->userdata("finacial_year");
+        $InvData = $this->GetPurchaseInvoiceDetails($PurchInvoiceID);
+        $CenterID = $InvData->CenterID;
+        $this->db->select("tblK1purchasemaster.*");
+        $this->db->from(db_prefix() . "K1purchasemaster");
+        $this->db->where(
+            db_prefix() . "K1purchasemaster.Inv_No",
+            $PurchInvoiceID
+        );
+        $purchaselist = $this->db->get()->row();
+        $data_array = [
+            "OrderStatus" => "P",
+            "Is_Ledger" => "N",
+            "PaymentNo" => null,
+            "PurchaseType" => null,
+            "PaymentMode" => null,
+            "PaymentMethod" => null,
+            "RefNo" => null,
+            "EffectOn" => null,
+            "Lupdate" => date("Y-m-d H:i:s"),
+            "UserID2" => $this->session->userdata("username"),
+        ];
+        $this->db->where([
+            "PlantID" => $selected_company,
+            "FY" => $fy,
+            "Inv_No" => $PurchInvoiceID,
+        ]);
+        $this->db->update(db_prefix() . "K1purchasemaster", $data_array);
+        if ($this->db->affected_rows() > 0) {
+            // Move Ledger data from ledger table to ledger history table
+            $GetLedgerList = $this->GetLedgerListByVoucher($PurchInvoiceID);
+            $GetLedgerListByPaymentNo = $this->GetLedgerListByPayment(
+                $purchaselist->PaymentNo
+            );
+            foreach ($GetLedgerList as $key => $val) {
+                $ledger_audit = [
+                    "PlantID" => $val["PlantID"],
+                    "FY" => $val["FY"],
+                    "Transdate" => $val["Transdate"],
+                    "TransDate2" => $val["TransDate2"],
+                    "VoucherID" => $val["VoucherID"],
+                    "PartyID" => $val["PartyID"],
+                    "AccountID" => $val["AccountID"],
+                    "CounterAccount" => $val["CounterAccount"],
+                    "CenterID" => $val["CenterID"],
+                    "CommodityID" => $val["CommodityID"],
+                    "EntryFor" => $val["EntryFor"],
+                    "TType" => $val["TType"],
+                    "Amount" => $val["Amount"],
+                    "Narration" => $val["Narration"],
+                    "PassedFrom" => $val["PassedFrom"],
+                    "OrdinalNo" => $val["OrdinalNo"],
+                    "UserID" => $val["UserID"],
+                    "Lupdate" => date("Y-m-d H:i:s"),
+                    "UserID2" => $this->session->userdata("username"),
+                ];
+                $this->db->insert(
+                    db_prefix() . "accountledgeraudit",
+                    $ledger_audit
+                );
+            }
+            foreach ($GetLedgerListByPaymentNo as $key => $val1) {
+                $ledger_auditPayment = [
+                    "PlantID" => $val1["PlantID"],
+                    "FY" => $val1["FY"],
+                    "Transdate" => $val1["Transdate"],
+                    "TransDate2" => $val1["TransDate2"],
+                    "VoucherID" => $val1["VoucherID"],
+                    "PartyID" => $val1["PartyID"],
+                    "AccountID" => $val1["AccountID"],
+                    "CounterAccount" => $val1["CounterAccount"],
+                    "CenterID" => $val1["CenterID"],
+                    "CommodityID" => $val1["CommodityID"],
+                    "EntryFor" => $val1["EntryFor"],
+                    "TType" => $val1["TType"],
+                    "Amount" => $val1["Amount"],
+                    "Narration" => $val1["Narration"],
+                    "PassedFrom" => $val1["PassedFrom"],
+                    "OrdinalNo" => $val1["OrdinalNo"],
+                    "UserID" => $val1["UserID"],
+                    "Lupdate" => date("Y-m-d H:i:s"),
+                    "UserID2" => $this->session->userdata("username"),
+                ];
+                $this->db->insert(
+                    db_prefix() . "accountledgeraudit",
+                    $ledger_auditPayment
+                );
+            }
+            // Delete Previous ledger data
+            $this->db->where([
+                "PlantID" => $selected_company,
+                "FY" => $fy,
+                "VoucherID" => $PurchInvoiceID
+            ]);
+            $this->db->delete(db_prefix() . "accountledger");
+
+            $this->db->where([
+                "PlantID" => $selected_company,
+                "FY" => $fy,
+                "VoucherID" => $purchaselist->PaymentNo,
+                "PassedFrom" => "PAYMENTS"
+            ]);
+            $this->db->delete(db_prefix() . "accountledger");
+            return true;
+        } else {
+            return false;
+        }
+    }
+
     public function UpdateKirtiOneInward($data, $id)
     {
         $selected_company = $this->session->userdata("root_company");
@@ -5897,8 +6622,7 @@ class PurchaseModel extends App_Model
     {
         $selected_company = $this->session->userdata("root_company");
         $year = $this->session->userdata("finacial_year");
-        $this
-            ->db->select('tblK1purchasemaster.*,tblclients.company,tblclients.phonenumber,tblclients.state,
+        $this->db->select('tblK1purchasemaster.*,tblclients.company,tblclients.phonenumber,tblclients.state,
 			tblxx_statelist.state_name, SUM(tblK1history.OrderQty) AS TotalOrderQty,
 			(tblK1purchasemaster.Purchamt - tblK1purchasemaster.Discamt) AS taxable_amt,tblCenterMaster.CenterName,tblCenterMaster.state AS CenterState,
 			tblGstRecord.gstin AS gst, CenterState.state_name AS StateCenter, GROUP_CONCAT(DISTINCT CONCAT(tblclients.house, ", ", tblclients.street, ", ", tblclients.loc, ", ", tblclients.vtc, ", ", tblxx_statelist.state_name, " - ", tblxx_citylist.city_name)) AS VendorAddress');
@@ -9121,4 +9845,57 @@ class PurchaseModel extends App_Model
             }
         }
     }
+
+    public function generateNextVoucherIDNew($selected_date = '', $plant_id = '', $passage_from = '')
+	{
+		if (empty($selected_date)) {
+			$selected_date = date('Y-m-d');
+		} else {
+			$selected_date = date('Y-m-d', strtotime($selected_date));
+		}
+		if (empty($plant_id)) {
+			$plant_id = $this->session->userdata('root_company');
+		}
+		// Extract date components
+		$date_parts = explode('-', $selected_date);
+		$year = substr($date_parts[0], 2);
+		$month = $date_parts[1];
+		$day = $date_parts[2];
+		$plant_id_formatted = str_pad($plant_id, 2, '0', STR_PAD_LEFT);
+		switch (strtoupper($passage_from)) {
+			case 'JOURNAL':
+				$prefix = 'J';
+				break;
+			case 'RECEIPTS':
+				$prefix = 'R';
+				break;
+			case 'PAYMENTS':
+				$prefix = 'P';
+				break;
+			default:
+				$prefix = 'C';
+				break;
+		}
+		// Build base: J0126040300001 or C0126040300001
+		$voucher_base = $prefix . $plant_id_formatted . $year . $month . $day;
+		$sql = "SELECT VoucherID 
+							FROM " . db_prefix() . "accountledger 
+							WHERE PlantID = " . (int)$plant_id . " 
+							AND PassedFrom = '" . $this->db->escape_str(strtoupper($passage_from)) . "' 
+							AND DATE(Transdate) = '" . $this->db->escape_str($selected_date) . "' 
+							AND VoucherID LIKE '" . $this->db->escape_like_str($voucher_base) . "%'
+							ORDER BY CAST(RIGHT(VoucherID, 3) AS UNSIGNED) DESC
+							LIMIT 1";
+		$query = $this->db->query($sql);
+		$row = $query->row_array();
+		if (!empty($row['VoucherID'])) {
+			$lastNumber = (int) substr($row['VoucherID'], -3);
+			$nextNumber = $lastNumber + 1;
+		} else {
+			$nextNumber = 1;
+		}
+		$new_voucher_number = $voucher_base . str_pad($nextNumber, 3, '0', STR_PAD_LEFT);
+		return $new_voucher_number;
+	}
+
 }

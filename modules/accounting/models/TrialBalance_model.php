@@ -262,7 +262,7 @@ class TrialBalance_model extends App_Model
 
         $this->db->where('tblaccountbalances.PlantID', $selected_company);
 
-        $this->db->group_by('tblclients.SubActGroupID');
+        $this->db->group_by('tblaccountbalances.AccountID');
 
         $CurrentYrOpnBal = $this->db->get('tblaccountbalances')->result_array();
 

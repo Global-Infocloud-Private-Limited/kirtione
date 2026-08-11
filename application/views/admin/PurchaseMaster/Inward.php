@@ -1716,7 +1716,7 @@
 
             e.preventDefault();  
 
-			window.location.href = '<?php echo admin_url(); ?>PurchaseMaster/AddEditPurchaseInvoice';  
+			window.location.href = '<?php echo admin_url(); ?>PurchaseMaster/Inward';  
 
 		});		
 

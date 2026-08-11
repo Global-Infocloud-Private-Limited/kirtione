@@ -794,7 +794,8 @@ function app_init_admin_sidebar_menu_items()
         $CI->app_menu->add_sidebar_children_item('Kirti1Purchase', [
                 'slug'     => 'PurchaseOrder',
                 'name'     => 'Purchase Order',
-                'href'     => admin_url('PurchaseMaster/AddEditPurchaseOrderNew'),
+                'href'     => admin_url('PurchaseMaster/Order'),
+                // 'href'     => admin_url('PurchaseMaster/AddEditPurchaseOrderNew'),
                 'position' => 2,
         ]);
     }
@@ -802,7 +803,8 @@ function app_init_admin_sidebar_menu_items()
         $CI->app_menu->add_sidebar_children_item('Kirti1Purchase', [
                 'slug'     => 'PurchaseInvoice',
                 'name'     => 'Purchase Inward',
-                'href'     => admin_url('PurchaseMaster/AddEditPurchaseInvoice'),
+                'href'     => admin_url('PurchaseMaster/Inward'),
+                // 'href'     => admin_url('PurchaseMaster/AddEditPurchaseInvoice'),
                 'position' => 3,
         ]);
     }
@@ -810,7 +812,8 @@ function app_init_admin_sidebar_menu_items()
         $CI->app_menu->add_sidebar_children_item('Kirti1Purchase', [
                 'slug'     => 'PurchaseInvoiceLedger',
                 'name'     => 'Purchase Invoice',
-                'href'     => admin_url('PurchaseMaster/AddEditPurchaseInvoiceLedger'),
+                'href'     => admin_url('PurchaseMaster/Invoice'),
+                // 'href'     => admin_url('PurchaseMaster/AddEditPurchaseInvoiceLedger'),
                 'position' => 4,
         ]);
     }

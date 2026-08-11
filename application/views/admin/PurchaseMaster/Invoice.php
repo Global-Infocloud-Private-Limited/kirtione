@@ -1770,7 +1770,7 @@
 
 		var url = window.location.href;
 
-		var regex = /\/AddEditPurchaseInvoiceLedger\/([^\/?#]+)/;	
+		var regex = /\/Invoice\/([^\/?#]+)/;	
 
 		if (url.match(regex)) {
 
@@ -1882,7 +1882,7 @@
 
 			    $.ajax({
 
-    				url:"<?php echo admin_url(); ?>PurchaseMaster/CancelPILedgerEntry",            
+    				url:"<?php echo admin_url(); ?>PurchaseMaster/CancelPurchaseInvoice",            
 
     				method:"POST",
 
@@ -1910,7 +1910,7 @@
 
     				        alert("The purchase invoice ledger has been cancelled successfully.");
 
-    				        window.location.href = '<?php echo admin_url();?>'+'PurchaseMaster/AddEditPurchaseInvoiceLedger';
+    				        window.location.href = '<?php echo admin_url();?>'+'PurchaseMaster/Invoice';
 
     				    }else{
 
@@ -2124,7 +2124,7 @@
 
             e.preventDefault();  
 
-			window.location.href = '<?php echo admin_url(); ?>PurchaseMaster/AddEditPurchaseInvoiceLedger';  
+			window.location.href = '<?php echo admin_url(); ?>PurchaseMaster/Invoice';  
 
 		});		
 

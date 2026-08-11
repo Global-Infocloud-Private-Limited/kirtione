@@ -21,7 +21,7 @@
           <div class="row">
               <?php
                 $data_attr = array();
-            
+                $data_attr2 = array('disabled'=>true)
             ?>
             <div class="col-md-2">
                 <?php
@@ -36,6 +36,7 @@
                     }else{
                         $date = date('Y-m-d');
                     }
+
                 ?>
               <?php $value = (isset($journal_entry) ? _d(substr($journal_entry->Transdate,0,10)) : _d($date)); ?>
               <?php echo render_date_input('journal_date','Voucher Date',$value,$data_attr); ?>
@@ -43,9 +44,10 @@
                 if(isset($journal_entry)){
                     ?>
                     <input type="hidden" name="journal_date1" value="<?php echo _d(substr($journal_entry->Transdate,0,10)); ?>">
-                    <input type="hidden" name="VoucheriD" value="<?php echo $journal_entry->VoucherID; ?>">
+                    <input type="hidden" name="VoucherID" value="<?php echo $journal_entry->VoucherID; ?>">
                 <?php
                 }
+
               ?>
             </div>
             <div class="col-md-2">
@@ -54,9 +56,8 @@
                 if($selected_company == 1){
                     $new_journalNumber = get_option('next_journal_number_for_kirti');
                 }
+
             ?>
-            
-            
               <?php $value = (isset($journal_entry) ? $journal_entry->VoucherID : $new_journalNumber); ?>
               <?php echo render_input('number','Voucher No.',$value,'text',$data_attr2); ?>
             </div>
@@ -82,11 +83,10 @@
                 }else{
                     $lastdate = date('Y-m-d');
                 }
-                
+
                /* $sql = 'SELECT * FROM tblaccountledger WHERE PlantID = '.$selected_company.' AND PassedFrom LIKE "JOURNAL" AND FY LIKE "'.$fy.'" ORDER BY abs(tblaccountledger.VoucherID) DESC ';
                 $result_data = $this->db->query($sql)->row();
                 $lastdate = substr($result_data->Transdate,0,10);*/
-                
                 $this->db->select('*');
                 $this->db->where('plant_id', $selected_company);
                 $this->db->where('year', $fy);
@@ -96,24 +96,21 @@
                 $this->db->from(db_prefix() . 'staff_permissions');
                 $result2 = $this->db->get()->row();
                 $day = $result2->days;
-                
                 if($day == 0){
                             $return = '';
                         }else{
-                            
                             $days = '- '.$day.' days';
                             $tillDate = date('Y-m-d', strtotime($lastdate. $days));
                             $tillDate_new = new DateTime($tillDate);
                             $journal_date_new    = new DateTime($journal_date);
-                            
                             if ($journal_date_new < $tillDate_new) {
-                                
                                 $return = 'disabled';
-                               
                             }else{
                                 $return = '';
                             }
+
                         }
+
             ?>
             <?php if($return == "disabled"){
             ?>
@@ -126,10 +123,9 @@
             }?>
             <?php
                 }
+
             ?>
-                
-                <?php 
-                
+                <?php
                     }else{
                 ?>
             <?php
@@ -138,56 +134,52 @@
                 <button type="button" class="btn btn-info journal-entry-form-submiter" onclick="this.disabled = true"><?php echo _l('submit'); ?></button>
             <?php
                     }
+
                 ?>
                 <?php
                     }
+
                 ?>
             </div>
-            
-          
           <?php
                     if(isset($journal_entry)){
                 ?>
             <div class="col-md-1" style="margin-top: 20px;">
             <?php
             if (has_permission_new('accounting_journal_entry', '', 'delete')) {
-            ?>  
+            ?>
               <a href="<?php echo admin_url('accounting/delete_journal_entry/' . $journal_entry->VoucherID) ?>" class="btn btn-danger <?php echo $return;?>">Delete</a>
             <?php
             }
-            ?>    
+
+            ?>
           </div>
           <?php
                     }
+
                 ?>
           <div class="col-md-1" style="margin-top: 20px;">
             <?php
             if (has_permission_new('accounting_journal_entry', '', 'view')) {
-            ?>  
+            ?>
               <a href="#" class="btn btn-warning add-new-transfer mbot15">show list</a>
               <?php
             }
+
             ?>
           </div>
-          
           </div>
-          
-          
           <div id="journal_entry_container"></div>
           <div class="col-md-12">
          <table class="table text-right">
             <tbody>
-                
                <tr>
-                  
                   <td class="text-right bold" style="width: 38%;">Total Debit/Credit Amount</td>
                   <td class="total_debit">
                     <?php $value = (isset($journal_entry) ? $journal_entry->damt : 0); ?>
                     <?php echo app_format_money($value, $currency->name);
-                    
                     ?>
                   </td>
-                   
                   <td class="total_credit">
                     <?php $value = (isset($journal_entry) ? $journal_entry->camt : 0); ?>
                     <?php echo app_format_money($value, $currency->name); ?>
@@ -199,14 +191,12 @@
         </div>
           <?php echo form_hidden('journal_entry'); ?>
           <?php echo form_hidden('amount'); ?>
-          
           <?php echo form_close(); ?>
         </div>
       </div>
     </div>
   </div>
 </div>
-
 <div class="modal fade" id="transfer-modal" data-keyboard="false" data-backdrop="static">
    <div class="modal-dialog modal-lg">
       <div class="modal-content">
@@ -214,8 +204,6 @@
             <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
             <h4 class="modal-title">Journal Voucher List</h4>
          </div>
-         
-         
          <div class="modal-body">
             <?php
                     $fy = $this->session->userdata('finacial_year');
@@ -232,9 +220,10 @@
                         $from_date = "01/".date('m')."/".date('Y');
                         $to_date = date('d/m/Y');
                     }
-            ?> 
+
+            ?>
             <div class="row">
-                <?php //$current_date = date('d/m/Y'); 
+                <?php //$current_date = date('d/m/Y');
                 //$from_date = '01/'.date('m').'/'.date('Y');
                 ?>
                 <div class="col-md-3">
@@ -256,11 +245,8 @@
                     <input type="text" id="myInput1" onkeyup="myFunction2()" placeholder="Search for names.." title="Type in a name" style="float: right;">
                 </div>
                 <div class="col-md-12">
-                 
             <div class="table_journal_report">
-             
               <table class="tree table table-striped table-bordered table_journal_report" id="table_journal_report" width="100%">
-                  
                 <thead>
                     <tr style="display:none;">
                       <td colspan="9" ><h5 style="text-align:center;"><span style="font-size:15px;font-weight:700;"><?php echo $company_detail->company_name; ?></span><br><span style="font-size:10px;font-weight:600;"><?php echo $company_detail->address; ?></span><br><span class="report_for" style="font-size:10px;"></span></h5></td>
@@ -273,22 +259,18 @@
                     <th style="text-align:left;">Dr/Cr</th>
                     <th style="text-align:left;">Amount</th>
                     <th style="text-align:left;">Description</th>
-                    
                   </tr>
                 </thead>
                 <tbody>
                 </tbody>
-              </table>   
+              </table>
             </div>
             <span id="searchh2" style="display:none;">
                                 Loading.....
                             </span>
-                    
                 </div>
               </div>
-              
          </div>
-        
       </div>
    </div>
 </div>
@@ -296,13 +278,10 @@
     .table_journal_report { overflow: auto;max-height: 60vh;width:100%;position:relative;top: 0px; }
 .table_journal_report thead th { position: sticky; top: 0; z-index: 1; }
 .table_journal_report tbody th { position: sticky; left: 0; }
-
 /* Just common table stuff. Really. */
 .table_journal_report table  { border-collapse: collapse; width: 100%; }
 .table_journal_report th, td { padding: 3px 3px !important; white-space: nowrap;font-size:11px; line-height:1.42857143;vertical-align: middle;}
 .table_journal_report th     { background: #50607b;color: #fff !important; }
-
-
 #table_journal_report tr:hover {
     background-color: #ccc;
 }
@@ -310,11 +289,12 @@
 #table_journal_report td:hover {
     cursor: pointer;
 }
+
 </style>
 <?php init_tail(); ?>
 <script type="text/javascript" language="javascript" >
 $(document).ready(function(){
- 
+    <?= isset($journal_entry) ? '' : 'fetchNextVoucherNumber();';?>
   function load_data(from_date,to_date)
   {
     $.ajax({
@@ -323,19 +303,15 @@ $(document).ready(function(){
       method:"POST",
       data:{from_date:from_date, to_date:to_date},
       beforeSend: function () {
-               
         $('#searchh2').css('display','block');
         $('.table_journal_report tbody').css('display','none');
-        
      },
       complete: function () {
-                            
         $('.table_journal_report tbody').css('display','');
         $('#searchh2').css('display','none');
      },
       success:function(data){
         var html = '';
-      
         for(var count = 0; count < data.length; count++)
         {
            if(data[count].AccountID == null){
@@ -343,46 +319,69 @@ $(document).ready(function(){
           }else{
               var new_AccountID = data[count].AccountID;
           }
+
           var url = "'<?php echo admin_url() ?>accounting/new_journal_entry/"+data[count].VoucherID+"'";
         html += '<tr onclick="location.href='+url+'">';
         html += '<td style="text-align:center;">'+data[count].VoucherID+'</td>';
-          
         var date = data[count].Transdate.substring(0, 10)
         var date_new = date.split("-").reverse().join("/");
-          
           html += '<td  style="text-align:center;">'+date_new+'</td>';
-          
           html += '<td >'+new_AccountID+'</td>';
           if(data[count].AccountName == null){
               var AccoutName = data[count].firstname + data[count].lastname;
           }else{
               var AccoutName = data[count].AccountName;
           }
+
           html += '<td  style="text-align:left;">'+ AccoutName +'</td>';
           html += '<td  style="text-align:center;">'+data[count].TType+'</td>';
           html += '<td style="text-align:right;">'+data[count].Amount+'</td>';
           html += '<td >'+data[count].Narration+'</td>';
-          
           html += '</tr>';
         }
+
          $('.table_journal_report tbody').html(html);
-      
       }
+
     });
   }
-  
- $('#search_data').on('click',function(){
+
+    $('#search_data').on('click',function(){
         var from_date = $("#from_date").val();
 	    var to_date = $("#to_date").val();
 	    var msg = "Sales Report "+from_date +" To " + to_date;
 	    $(".report_for").text(msg);
         load_data(from_date,to_date);
-        
- });
+    });
+    $('input[name="journal_date"]').on('change input', function () {
+        <?= isset($journal_entry) ? '' : 'fetchNextVoucherNumber();';?>
+    })
+    function fetchNextVoucherNumber() {
+        let date = $('input[name="journal_date"]').val();
+        $('input[name="number"]').val('Loading...');
+        $.ajax({
+            url:      '<?= admin_url('accounting/get_next_voucher_number'); ?>',
+            type:     'POST',
+            dataType: 'JSON',
+            data:     { selected_date: date, passage_from: 'JOURNAL' },
+            success: function (r) {
+                if (r && r.success) {
+                    $('input[name="number"]').val(r.voucher_number);
+                } else {
+                    var msg = (r && r.message) ? r.message : 'Unknown error';
+                    $('input[name="number"]').val('ERROR: ' + msg);
+                }
+
+            },
+            error: function () {
+                $('input[name="number"]').val('AJAX ERROR');
+            }
+
+        });
+    }
 
 });
 </script>
-
 <script>
     function myFunction2() {
   var input, filter, table, tr, td, i, txtValue;
@@ -399,11 +398,14 @@ $(document).ready(function(){
       } else {
         tr[i].style.display = "none";
       }
-    }       
-  }
-}
-</script>
 
+    }
+
+  }
+
+}
+
+</script>
 <script>
     $('.add-new-transfer').on('click', function(){
     $('#transfer-modal').find('button[type="submit"]').prop('disabled', false);
@@ -415,66 +417,51 @@ $(document).ready(function(){
     $(document).ready(function(){
     var maxEndDate = new Date('Y/m/d');
     var fin_y = "<?php echo $this->session->userdata('finacial_year')?>";
-    
     var year = "20"+fin_y;
-    
-    
     var cur_y = new Date().getFullYear().toString().substr(-2);
     if(cur_y > fin_y){
         var year2 = parseInt(fin_y) + parseInt(1);
         var year2_new = "20"+year2;
-        
         var e_dat = new Date(year2_new+'/03/31');
         var maxEndDate_new = e_dat;
     }else{
          var maxEndDate_new = maxEndDate;
     }
-    
+
     var minStartDate = new Date(year, 03);
    /* console.log(minStartDate);
     console.log(maxEndDate_new);*/
-    
     $('#journal_date').datetimepicker({
         format: 'd/m/Y',
         minDate: minStartDate,
         maxDate: maxEndDate_new,
         timepicker: false
     });
-    
-    
-    
     });
-</script> 
-
+</script>
 <script>
     $(document).ready(function(){
     var maxEndDate = new Date('Y/m/d');
     var fin_y = "<?php echo $this->session->userdata('finacial_year')?>";
-    
     var year = "20"+fin_y;
     var cur_y = new Date().getFullYear().toString().substr(-2);
     if(cur_y => fin_y){
         var year2 = parseInt(fin_y) + parseInt(1);
         var year2_new = "20"+year2;
-        
         var e_dat = new Date(year2_new+'/03/31');
-        
         var maxEndDate_new = e_dat;
     }else{
         var e_dat2 = new Date(year2+'/03/31');
         var maxEndDate_new = e_dat2;
     }
-    
+
     var minStartDate = new Date(year, 03);
-   
-    
     $('#from_date').datetimepicker({
         format: 'd/m/Y',
         minDate: minStartDate,
         maxDate: maxEndDate_new,
         timepicker: false
     });
-    
     $('#to_date').datetimepicker({
         format: 'd/m/Y',
         minDate: minStartDate,
@@ -484,11 +471,8 @@ $(document).ready(function(){
         pickTime: false,
             orientation: "left",
     });
-    
     });
-</script> 
+</script>
 </body>
-
 </html>
-
 <?php require 'modules/accounting/assets/js/journal_entry/journal_entry_js.php';?>

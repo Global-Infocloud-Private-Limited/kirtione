@@ -621,7 +621,7 @@
 					if (!has_permission_new('PurchaseInvoiceLedger', '', 'edit')) {
 						access_denied('PurchaseInvoiceLedger');
 					}
-					$id = $this->PurchaseModel->UpdateKirtiOnePurchaseInvoiceLedger($pur_order_data,$PINumber);
+					$id = $this->PurchaseModel->UpdateInvoiceLedger($pur_order_data,$PINumber);
 					if ($id) {
 						set_alert('success', _l('added_successfully', _l('pur_order')));
 						redirect(admin_url('PurchaseMaster/Invoice'));
@@ -662,6 +662,12 @@
 		{
 			$PurchInvoiceID = $this->input->post('PurchInvoiceID');
 			$data = $this->PurchaseModel->CancelPILedgerEntryByPIID($PurchInvoiceID);
+			echo json_encode($data);
+		}
+		public function CancelPurchaseInvoice()
+		{
+			$PurchInvoiceID = $this->input->post('PurchInvoiceID');
+			$data = $this->PurchaseModel->CancelPurchaseInvoiceByPIID($PurchInvoiceID);
 			echo json_encode($data);
 		}
 		public function GetPRByVendor()
@@ -1354,8 +1360,8 @@
 					}else if($val['OrderStatus'] == "P"){
 					$OrderStatus = "Pending";
 				}
-				$url = admin_url()."PurchaseMaster/AddEditPurchaseInvoiceLedger/".$val["Inv_No"];
-				//$html .= '<tr onclick="window.open('."'".$url."'".')">';
+				$url = admin_url()."PurchaseMaster/Invoice/".$val["Inv_No"];
+				// $url = admin_url()."PurchaseMaster/AddEditPurchaseInvoiceLedger/".$val["Inv_No"];
 				$html .= '<tr onclick="window.location.href=\''.$url.'\'">';
 				$html .= '<td style="text-align:center;">'.$val["Inv_No"].'</td>';
 				$html .= '<td style="text-align:center;">'._d(substr($val["Inv_date"],0,10)).'</td>';
@@ -1467,7 +1473,8 @@
 		'Entry_type'=>$this->input->post('Entry_type')
 		);
 		$result = $this->PurchaseModel->getItemOrderDetailsDB($data);
-		$redirectUrl = admin_url('PurchaseMaster/AddEditPurchaseOrderNew');
+		$redirectUrl = admin_url('PurchaseMaster/Order');
+		// $redirectUrl = admin_url('PurchaseMaster/AddEditPurchaseOrderNew');
 		$Report_type = $this->input->post('Report_type');
 		$html = '';
 		$html .= '<thead>';
@@ -2753,7 +2760,8 @@
 		$html = '';
 		$i = 1;
 		foreach ($result as $row) {
-			$url = admin_url('PurchaseMaster/AddEditPurchaseOrderNew/' . $row['PurchID']);
+			$url = admin_url('PurchaseMaster/Order/' . $row['PurchID']);
+			// $url = admin_url('PurchaseMaster/AddEditPurchaseOrderNew/' . $row['PurchID']);
 			$status = !empty($row['ReminderSent'])
 				? '<span class="label label-success">Sent</span>'
 				: '<span class="label label-warning">Pending</span>';

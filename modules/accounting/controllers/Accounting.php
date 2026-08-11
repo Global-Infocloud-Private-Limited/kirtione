@@ -45,12 +45,9 @@ class Accounting extends AdminController
 
 
 
-  // Journal Page View Load
-
+//============================== JOurnal Entry page ============================
   public function new_journal_entry($id = '')
-
   {
-
     if (!has_permission_new('accounting_journal_entry', '', 'view')) {
 
       access_denied('accounting_journal_entry');
@@ -829,25 +826,17 @@ class Accounting extends AdminController
     if ($this->input->post()) {
 
       $data                = $this->input->post();
-
-
-
       if ($id == '') {
 
         if (!has_permission_new('accounting_contra_entry', '', 'create')) {
 
           access_denied('accounting_contra_entry');
         }
-
         $success = $this->accounting_model->add_contra_entry($data);
-
         if ($success === 'close_the_book') {
-
           $message = _l('has_closed_the_book');
-
           set_alert('warning', _l('has_closed_the_book'));
         } elseif ($success) {
-
           set_alert('success', _l('added_successfully', "Contra"));
         }
       } else {
@@ -2842,6 +2831,9 @@ class Accounting extends AdminController
 
     $opn_data = $this->TrialBalance_model
       ->GetOpnBalData($BalanceSheet_head);
+      /*echo "<pre>";
+      print_r($opn_data);
+      die;*/
 
 
     // ============================================================
@@ -11981,84 +11973,10 @@ class Accounting extends AdminController
   }
 
 
-
-  /**
-
-   * delete receipt entry
-
-   * @param  integer $id
-
-   * @return
-
-   */
-
-  public function delete_receipt_entry($id)
-
-  {
-
-    if (!has_permission_new('accounting_receipt_entry', '', 'delete')) {
-
-      access_denied('accounting_receipt_entry');
-    }
-
-    $success = $this->accounting_model->delete_receipt_entry($id);
-
-    $message = '';
-
-    if ($success) {
-
-      $message = _l('deleted');
-
-      set_alert('success', $message);
-    } else {
-
-      $message = _l('can_not_delete');
-
-      set_alert('warning', $message);
-    }
-
-    redirect(admin_url('accounting/receipt_entry'));
-  }
+  
 
 
 
-  /**
-
-   * delete PAyment entry
-
-   * @param  integer $id
-
-   * @return
-
-   */
-
-  public function delete_payment_entry($id)
-
-  {
-
-    if (!has_permission_new('accounting_payment_entry', '', 'delete')) {
-
-      access_denied('accounting_payment_entry');
-    }
-
-    $success = $this->accounting_model->delete_payment_entry($id);
-
-    $message = '';
-
-    if ($success) {
-
-      $message = _l('deleted');
-
-      set_alert('success', $message);
-    } else {
-
-      $message = _l('can_not_delete');
-
-      set_alert('warning', $message);
-    }
-
-    redirect(admin_url('accounting/payment_entry'));
-  }
 
 
 
@@ -12203,59 +12121,28 @@ class Accounting extends AdminController
   }
 
 
-
-  /**
-
-   * delete journal entry
-
-   * @param  integer $id
-
-   * @return
-
-   */
-
+//======================= Delete Journal Entry =================================
   public function delete_journal_entry($id)
-
   {
-
     if (!has_permission_new('accounting_journal_entry', '', 'delete')) {
-
-      access_denied('accounting_journal_entry');
+        access_denied('accounting_journal_entry');
     }
-
     $success = $this->accounting_model->delete_journal_entry($id);
 
     $message = '';
 
     if ($success) {
-
       $message = _l('deleted');
-
       set_alert('success', $message);
     } else {
-
       $message = _l('can_not_delete');
-
       set_alert('warning', $message);
     }
 
-    redirect(admin_url('accounting/new_journal_entry'));
+        redirect(admin_url('accounting/new_journal_entry'));
   }
-
-
-
-  /**
-
-   * delete contra entry
-
-   * @param  integer $id
-
-   * @return
-
-   */
-
+//======================= Delete Contra Entry =================================
   public function delete_contra_entry($id)
-
   {
 
     if (!has_permission_new('accounting_contra_entry', '', 'delete')) {
@@ -12281,17 +12168,59 @@ class Accounting extends AdminController
 
     redirect(admin_url('accounting/new_contra_entry'));
   }
+  
+//======================= Delete Payment Entry =================================
+  public function delete_payment_entry($id)
+  {
 
+    if (!has_permission_new('accounting_payment_entry', '', 'delete')) {
 
+      access_denied('accounting_payment_entry');
+    }
 
-  /**
+    $success = $this->accounting_model->delete_payment_entry($id);
 
-   * report manage
+    $message = '';
 
-   * @return view
+    if ($success) {
 
-   */
+      $message = _l('deleted');
 
+      set_alert('success', $message);
+    } else {
+
+      $message = _l('can_not_delete');
+
+      set_alert('warning', $message);
+    }
+
+    redirect(admin_url('accounting/payment_entry'));
+  }
+//======================= Delete Payment Entry =================================
+  public function delete_receipt_entry($id)
+  {
+    if (!has_permission_new('accounting_receipt_entry', '', 'delete')) {
+      access_denied('accounting_receipt_entry');
+    }
+    $success = $this->accounting_model->delete_receipt_entry($id);
+
+    $message = '';
+
+    if ($success) {
+
+      $message = _l('deleted');
+
+      set_alert('success', $message);
+    } else {
+
+      $message = _l('can_not_delete');
+
+      set_alert('warning', $message);
+    }
+
+    redirect(admin_url('accounting/receipt_entry'));
+  }
+  
   public function report()
   {
 
@@ -26137,7 +26066,8 @@ class Accounting extends AdminController
       }else if($TransactionType == "Purchase Return"){
         $redirectUrl = admin_url().'PurchaseMaster/AddEditPurchaseReturnInvoice/'.$value["OrderID"];
       }else if($TransactionType == "Purchase"){
-        $redirectUrl = admin_url().'PurchaseMaster/AddEditPurchaseOrderNew/'.$value["OrderID"];
+        $redirectUrl = admin_url().'PurchaseMaster/Order/'.$value["OrderID"];
+        // $redirectUrl = admin_url().'PurchaseMaster/AddEditPurchaseOrderNew/'.$value["OrderID"];
       }else if($TransactionType == "Sale Credit"){
         $redirectUrl = admin_url().'cd_notes/edit/'.$value["OrderID"];
       }else if($TransactionType == "Purchase Debit"){

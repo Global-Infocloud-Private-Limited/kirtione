@@ -2110,26 +2110,9 @@
 					$receipt_date = $statementdata['transaction_date'];
 					$month = substr($receipt_date,5,2);
 					$date = substr($statementdata['transaction_date'],0,10);
-					$get_result_to_cur_date = $this->rate_master_model->get_result_to_cur_date_receipts($date);
 					$PassedFrom = "RECEIPTS";
-					$GetLastUniqueNo = $this->rate_master_model->GetLastUniqueNo($PassedFrom);
-					$LastUniqueID = $GetLastUniqueNo[0]['UniquID'] + 1;
-					if(empty($get_result_to_cur_date)){
-						if($selected_company == 1){
-							$new_tax_transactionNumber = get_option('next_receipts_number_for_kirti');
-						}
-						$new_voucher_number = $new_tax_transactionNumber;
-					}else{
-						$count = count($get_result_to_cur_date);
-						$last_index = $count - 1;
-						$new_voucher_number = $get_result_to_cur_date[$last_index]['VoucherID'];
-						$incNo = (int) $new_voucher_number - 1;
-						$sql = 'UPDATE tblaccountledger SET VoucherID = abs(VoucherID) + 1 where abs(VoucherID) > "'.$incNo.'" AND PassedFrom = "RECEIPTS" AND FY = "'.$fy.'" AND PlantID = '.$selected_company;
-						$this->db->query($sql);
-						if ($this->db->affected_rows() > 0) {
-							$this->rate_master_model->increment_next_receipts_number();
-						}
-					}
+					$LastUniqueID = $this->generateNextVoucherIDNew($date, $selected_company, $PassedFrom);
+					
 					$ledgerAccount = $value['ledgerAccount'];
 
 					// Ledger Entry
@@ -2137,7 +2120,7 @@
     					"PlantID" =>$selected_company,
     					"Transdate" =>$receipt_date,
     					"TransDate2" =>date('Y-m-d H:i:s'),
-    					"VoucherID" =>$new_voucher_number,
+    					"VoucherID" =>$LastUniqueID,
     					"AccountID" =>$ledgerAccount,
     					"CenterID" =>$statementdata['centerID'],
     					"CounterAccount" =>$statementdata['AccountID'],
@@ -2157,9 +2140,9 @@
     					"PlantID" =>$selected_company,
     					"Transdate" =>$receipt_date,
     					"TransDate2" =>date('Y-m-d H:i:s'),
-    					"VoucherID" =>$new_voucher_number,
+    					"VoucherID" =>$LastUniqueID,
     					"AccountID" =>$statementdata['AccountID'],
-							"CenterID" =>$statementdata['centerID'],
+						"CenterID" =>$statementdata['centerID'],
     					"CounterAccount" =>$ledgerAccount,
     					"TType" =>"D",
     					"PartyID" =>'KASPL',
@@ -2180,9 +2163,7 @@
 						$this->db->set('Status', 'Y');
 						$this->db->where('id', $statementdata['id']);
 						$this->db->update(db_prefix() . 'import_statement');
-						if(empty($get_result_to_cur_date)){
-							$this->rate_master_model->increment_next_receipts_number();
-						}
+						
 					}else{
 					    $msg2 = "Receipt vouchers have not been generated for ";
 					}
@@ -2227,7 +2208,8 @@
 			echo json_encode($result);
 		}
 
-		public function GeneratePaymentVoucher(){
+		public function GeneratePaymentVoucher()
+		{
 			$Data = $this->input->post();
 
 			$fy = $this->session->userdata('finacial_year');
@@ -2277,7 +2259,20 @@
 				$date = date('Y-m-d', strtotime($formattedDate));
 				switch($type){
 					case 'CONTRA':
-						$new_voucher_number = get_option('next_contra_number_for_kirti');
+					    $key = $date . '_' . $type; // e.g. 2026-07-02_PAYMENTS
+						if (!isset($voucherCache[$key])) {
+							// First voucher for this date & type
+							$new_voucher_number = $this->rate_master_model->generateNextVoucherIDNew($date, $selected_company, $type);
+							$voucherCache[$key] = $new_voucher_number;
+						} else {
+							// Increment the last generated voucher
+							$lastVoucher = $voucherCache[$key];
+							$prefix = substr($lastVoucher, 0, -3);
+							$number = (int) substr($lastVoucher, -3);
+							$new_voucher_number = $prefix . str_pad($number + 1, 3, '0', STR_PAD_LEFT);
+							$voucherCache[$key] = $new_voucher_number;
+						}
+						
 						$insertData[] = array(
 							"FY" => $fy,
 							"PlantID" => $selected_company,
@@ -2317,7 +2312,6 @@
 							"OrdinalNo" => 1,
 							"UserID" => $this->session->userdata('username'),
 						);
-						$this->increment_next_contra_number();
 						break;
 					case 'PAYMENTS':
 						// $new_voucher_number = $this->rate_master_model->generateNextVoucherIDNew($date, $selected_company, 'PAYMENTS');

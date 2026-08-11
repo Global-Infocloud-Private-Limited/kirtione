@@ -4622,6 +4622,7 @@ class KirtiOneOrderModel extends App_Model
 			$OutQty = 0;
 			$BalQty = 0;
 			$isPurch = false;
+			$CaseQty = 1;
 			foreach ($BatchWiseTransaction as $stockkey => $stockval) {
 				if ($stockval["BatchNo"] == $batchval && $stockval["TType"] == "O" && $stockval["TType2"] == "SALE") {
 					$SaleQty += ($stockval["TotalQty"]);
@@ -4638,7 +4639,6 @@ class KirtiOneOrderModel extends App_Model
 				} else if ($stockval["BatchNo"] == $batchval && $stockval["TType"] == "T" && $stockval["TType2"] == "IN") {
 					$InQty += ($stockval["TotalQty"]);
 					$ExpDate = _d(substr($stockval["ExpDate"], 0, 10));
-					$PurchRate = $stockval["PurchRate"];
 				} else if ($stockval["BatchNo"] == $batchval && $stockval["TType"] == "T" && $stockval["TType2"] == "OUT") {
 					$OutQty += $stockval["TotalQty"];
 				} else if ($stockval["BatchNo"] == $batchval && $stockval["TType"] == "I" && $stockval["TType2"] == "INWARD") {

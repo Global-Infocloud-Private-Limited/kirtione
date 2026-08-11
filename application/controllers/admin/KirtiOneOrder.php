@@ -1894,4 +1894,253 @@
 			$trader_list = $this->KirtiOneOrderModel->GetCategoryWiseItems($CategoryType,$CenterID);		
 			echo json_encode($trader_list);
 		}
+
+		public function fix_wrong_receipt_voucher_ids()
+		{
+				$selected_company = $this->session->userdata('selected_company');
+
+				$sql = "
+						SELECT
+								PlantID,
+								FY,
+								DATE(Transdate) AS EntryDate,
+								Transdate,
+								Amount,
+								COUNT(*) AS EntryCount,
+								GROUP_CONCAT(id ORDER BY id) AS LedgerIDs,
+								GROUP_CONCAT(VoucherID ORDER BY id) AS OldVoucherIDs
+						FROM tblaccountledger
+						WHERE FY = '26'
+							AND PassedFrom = 'RECEIPTS'
+							AND VoucherID REGEXP '^[0-9]+$'
+						GROUP BY
+								PlantID,
+								DATE(Transdate),
+								Transdate,
+								Amount
+						HAVING COUNT(*) = 2
+						ORDER BY
+								EntryDate,
+								Transdate,
+								MIN(id)
+				";
+
+				$groups = $this->db->query($sql)->result();
+
+				if (empty($groups)) {
+
+						echo json_encode([
+								'status'  => false,
+								'message' => 'No wrong receipt records found.'
+						]);
+						return;
+				}
+
+				$this->db->trans_begin();
+
+				$debugData = [];
+
+				$totalGroups  = 0;
+				$totalRecords = 0;
+
+				try {
+
+						foreach ($groups as $group) {
+
+								$ledgerIds = explode(',', $group->LedgerIDs);
+								$oldVoucherIds = explode(',', $group->OldVoucherIDs);
+
+								// Safety check - every group must contain exactly 2 records
+								if (count($ledgerIds) != 2) {
+										continue;
+								}
+
+								/*
+								* Generate new VoucherID
+								*/
+								$newVoucherID = $this->KirtiOneOrderModel->generateNextVoucherIDNew(
+										$group->Transdate,
+										$group->PlantID,
+										'RECEIPTS'
+								);
+
+								if (empty($newVoucherID)) {
+
+										throw new Exception(
+												'VoucherID generation failed for Ledger IDs: ' .
+												$group->LedgerIDs
+										);
+								}
+
+								/*
+								* Debug information BEFORE update
+								*/
+								$debugRow = [
+										'PlantID'       => $group->PlantID,
+										'FY'            => $group->FY,
+										'Transdate'     => $group->Transdate,
+										'Amount'        => $group->Amount,
+										'LedgerIDs'     => $group->LedgerIDs,
+										'OldVoucherID1'=> isset($oldVoucherIds[0]) ? $oldVoucherIds[0] : '',
+										'OldVoucherID2'=> isset($oldVoucherIds[1]) ? $oldVoucherIds[1] : '',
+										'NewVoucherID'  => $newVoucherID,
+										'UpdatedRows'   => 0
+								];
+
+								/*
+								* Update both records
+								*/
+								$this->db
+										->where_in('id', $ledgerIds)
+										->where('FY', '26')
+										->where('PassedFrom', 'RECEIPTS')
+										->where("VoucherID REGEXP '^[0-9]+$'", null, false)
+										->update('tblaccountledger', [
+												'VoucherID' => $newVoucherID
+										]);
+
+								$affectedRows = $this->db->affected_rows();
+
+								$debugRow['UpdatedRows'] = $affectedRows;
+
+								/*
+								* Make sure exactly 2 rows were updated
+								*/
+								if ($affectedRows != 2) {
+
+										throw new Exception(
+												'Expected 2 rows but updated ' .
+												$affectedRows .
+												' rows. Ledger IDs: ' .
+												$group->LedgerIDs .
+												' | New VoucherID: ' .
+												$newVoucherID
+										);
+								}
+
+								/*
+								* Add to debug result
+								*/
+								$debugData[] = $debugRow;
+
+								$totalGroups++;
+								$totalRecords += $affectedRows;
+						}
+
+						/*
+						* Check transaction
+						*/
+						if ($this->db->trans_status() === FALSE) {
+								throw new Exception('Database transaction failed.');
+						}
+
+						$this->db->trans_commit();
+
+						echo json_encode([
+								'status'        => true,
+								'message'       => 'Receipt VoucherID correction completed.',
+								'total_groups'  => $totalGroups,
+								'total_records' => $totalRecords,
+								'debug_data'    => $debugData
+						]);
+
+				} catch (Exception $e) {
+
+						$this->db->trans_rollback();
+						echo json_encode([
+								'status'     => false,
+								'message'    => $e->getMessage(),
+								'debug_data' => $debugData
+						]);
+				}
+		}
+
+		public function fix_purchase_order_history()
+		{
+			$this->db->select('*');
+			$this->db->from('tblK1history');
+			$this->db->where('TType', 'P');
+			$this->db->where('TType2', 'Purchase');
+			$this->db->where('TransID IS NOT NULL', null, false);
+			$this->db->where('BillID <> TransID', null, false);
+
+			$query = $this->db->get();
+
+			if (!$query) {
+				echo '<pre>';
+				print_r([
+					'status' => false,
+					'message' => 'Failed to fetch source records.'
+				]);
+				echo '</pre>';
+				return;
+			}
+
+			$records = $query->result_array();
+
+			if (empty($records)) {
+				echo '<pre>';
+				print_r([
+					'status' => false,
+					'message' => 'No records found.'
+				]);
+				echo '</pre>';
+				return;
+			}
+
+			$totalRows = count($records);
+			
+			$this->db->trans_begin();
+			$insertedRows = 0;
+			try {
+				foreach ($records as $row) {
+					unset($row['id']);
+					$row['TType']  = 'P';
+					$row['TType2'] = 'Purchase Order';
+					$row['TransID'] = $row['BillID'];
+					$this->db->insert('tblK1history', $row);
+
+					if ($this->db->affected_rows() != 1) {
+						throw new Exception(
+							'Insert failed for BillID: ' . $row['BillID']
+						);
+					}
+
+					$insertedRows++;
+				}
+				
+				if ($this->db->trans_status() === FALSE) {
+					throw new Exception(
+						'Database transaction failed.'
+					);
+				}
+
+				$this->db->trans_commit();
+
+				echo '<pre>';
+				print_r([
+					'status' => true,
+					'message' => 'Purchase Order history records copied successfully.',
+					'source_rows' => $totalRows,
+					'inserted_rows' => $insertedRows,
+					'changes' => [
+						'TType' => 'P',
+						'TType2' => 'Purchase Order',
+						'TransID' => 'BillID'
+					]
+				]);
+				echo '</pre>';
+
+			} catch (Exception $e) {
+				$this->db->trans_rollback();
+				echo '<pre>';
+				print_r([
+					'status' => false,
+					'message' => $e->getMessage(),
+					'inserted_before_error' => $insertedRows
+				]);
+				echo '</pre>';
+			}
+		}
+
 	}															
