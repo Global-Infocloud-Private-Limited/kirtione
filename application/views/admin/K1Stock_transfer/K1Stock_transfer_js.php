@@ -496,7 +496,7 @@
 
 								hot.setDataAtCell(row,8, '');							
 
-								hot.setDataAtCell(row,9, (parseFloat(response.rate) / parseFloat(response.PackingQty)));     													
+								hot.setDataAtCell(row,9, (parseFloat(response.rate)));     													
 
 								hot.setDataAtCell(row,11, response.taxrate);
 
@@ -570,7 +570,7 @@
 
 								hot.setDataAtCell(row,7, response[0].ExpDate);
 
-								hot.setDataAtCell(row,9, (parseFloat(response[0].PurchRate)/parseFloat(response[0].CaseQty)));
+								hot.setDataAtCell(row,9, (parseFloat(response[0].PurchRate)));
 
 								}else{
 

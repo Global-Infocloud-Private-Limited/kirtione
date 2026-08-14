@@ -2143,7 +2143,7 @@
 		$selected_company = $CI->session->userdata("root_company");
 		
 		$CI->db->select('tblK1ordermaster.*,tblclients.company,tblclients.phonenumber,tblclients.state,tblxx_statelist.state_name, SUM(tblK1history.OrderQty) AS TotalOrderQty,
-		tblCenterMaster.CenterName,tblCenterMaster.address as CenterAddress,tblCenterMaster.GSTNo as CenterGst,tblCenterMaster.MobileNo as CenterMobile,tblCenterMaster.Fertikizers,tblCenterMaster.Insecticides,tblCenterMaster.Seeds,tblCenterMaster.Cotton');
+		tblCenterMaster.CenterName,tblCenterMaster.state AS CenterState,tblCenterMaster.address as CenterAddress,tblCenterMaster.GSTNo as CenterGst,tblCenterMaster.MobileNo as CenterMobile,tblCenterMaster.Fertikizers,tblCenterMaster.Insecticides,tblCenterMaster.Seeds,tblCenterMaster.Cotton');
 		$CI->db->from(db_prefix() . 'K1ordermaster');
 		$CI->db->join(db_prefix() . 'clients','tblclients.AccountID = tblK1ordermaster.AccountID AND tblclients.PlantID = tblK1ordermaster.PlantID');
 		$CI->db->join(db_prefix() . 'xx_statelist', db_prefix() . 'xx_statelist.short_name = ' . db_prefix() . 'clients.state', 'left');

@@ -292,6 +292,11 @@
 
 			readOnly: true             
 
+		},
+		{
+			data: 'BatchNo',
+			type: 'text',
+			readOnly: true             
 		}
 
 		
@@ -299,55 +304,31 @@
 		],
 
 		licenseKey: 'non-commercial-and-evaluation',
-
 		stretchH: 'all',
-
 		width: '100%',
-
-      height:'400px',
-
+		height:'400px',
 		columnHeaderHeight: 40,
-
 		minRows: 200,
-
 		maxRows: 150,
-
 		rowHeaders: true,
-
 		colWidths: [100,80, 60, 60, 70,70,50,70, 60, 50,50,50,50,70],
-
 		colHeaders: [
-
         '<?php echo _l('Item Name'); ?>',
-
         '<?php echo _l('Hsn Code'); ?>',
-
         '<?php echo _l('Brand'); ?>',
-
         '<?php echo _l('MeasuredIn'); ?>',
-
         '<?php echo _l('Pack Qty'); ?>',
-
         '<?php echo _l('Pack Weight'); ?>',
-
         '<?php echo _l('Unit'); ?>',
-
         '<?php echo _l('Qty'); ?>',
-
         '<?php echo _l('Rate'); ?>',
-
         '<?php echo _l('Dis Amt'); ?>',
-
         '<?php echo _l('GST%'); ?>',
-
-        '<?php echo _l('CGSTAMT'); ?>',
-
-        '<?php echo _l('SGSTAMT'); ?>',
-
-		'<?php echo _l('IGSTAMT'); ?>',
-
-		'<?php echo _l('Net Amt'); ?>',
-
+        '<?php echo _l('CGST Amt'); ?>',
+        '<?php echo _l('SGST Amt'); ?>',
+				'<?php echo _l('IGST Amt'); ?>',
+				'<?php echo _l('Net Amt'); ?>',
+				'<?php echo _l('Batch No.'); ?>'
 		],
 
 		columnSorting: {

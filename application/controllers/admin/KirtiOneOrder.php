@@ -887,7 +887,7 @@
             access_denied('Invoices');
 		}
 		$invoice        = $this->KirtiOneOrderModel->GetDirectSaleOrderDetails($id);
-		// print_r($invoice); die;
+		// echo "<pre>"; print_r($invoice); die;
 		$invoice        = hooks()->apply_filters('before_admin_view_invoice_pdf', $invoice);
 		try {
 			$pdf = B2BSaleinvoice_pdf($invoice);

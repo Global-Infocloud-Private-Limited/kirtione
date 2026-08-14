@@ -669,27 +669,27 @@ class PurchaseModel extends App_Model
                 $productId      = $value["ItemID"];
                 $brand          = $value["Brand"];
                 $unit           = $value["MeasuredIn"];
-                $packing_qty    = $value["PackingQty"];
+                $packing_qty    = $value["PackingQty"]; // 12
                 $packing_weight = $value["PackingWeight"];
                 $saleunit       = $value["PurchaseUnit"];
-                $qty            = $value["Qty"];
-                $PurchRate      = $value["PurchRate"];
-                $gst            = $value["GST"];
+                $qty            = $value["Qty"]; // 100
+                $PurchRate      = $value["PurchRate"]; // 1200
+                $gst            = $value["GST"]; // 5
 
-                $salerate   = $PurchRate + $PurchRate * ($gst / 100);
-                $ItemQty    = $packing_qty * $qty;
-                $ItemAmt    = $qty * $PurchRate;
-                $ItemDisc   = 0;
-                $DiscPer    = 0;
-                $UnitDisc   = 0;
-
-                if ($value["Discount"] > 0 && $qty > 0) {
-                    $ItemDisc   = $value["Discount"] * $qty;
-                    $UnitDisc   = $value["Discount"];
-                    $DiscPer    = ($value["Discount"] / $PurchRate) * 100;
+                $PurchRate  = $value["PurchRate"] / $value["PackingQty"]; // 1200 / 12 = 100
+                $salerate   = ($PurchRate + ($PurchRate * ($gst / 100))); // 100 + (100 * (5 / 100)) = 105
+                $ItemQty = $packing_qty * $qty; // 12 * 100 = 1200
+                $ItemAmt = $ItemQty * $PurchRate; // 1200 * 100 = 120000
+                $ItemDisc = 0;
+                $DiscPer = 0;
+                $UnitDisc = 0;
+                if ($value["Discount"] > 0 && $ItemQty > 0) {
+                    $UnitDisc = $value["Discount"]; // 5
+                    $ItemDisc = $value["Discount"] * $ItemQty; // 5 * 1200 = 6000
+                    $DiscPer = ($value["Discount"] / $PurchRate) * 100; // (5 / 100) * 100 = 5
                 }
-                $ItemTaxableAmt = $ItemAmt - $ItemDisc;
-                $ItemGSTAmt     = $ItemTaxableAmt * ($gst / 100);
+                $ItemTaxableAmt = $ItemAmt - $ItemDisc; // 120000 - 6000 = 114000
+                $ItemGSTAmt = $ItemTaxableAmt * ($gst / 100); // 114000 * (5 / 100) = 5700
                 $CGSTPer = null;
                 $SGSTPer = null;
                 $IGSTPer = null;
@@ -1046,26 +1046,28 @@ class PurchaseModel extends App_Model
                 $Ordinalno      = $value["Ordinalno"];
                 $brand          = $value["Brand"];
                 $unit           = $value["MeasuredIn"];
-                $packing_qty    = $value["PackingQty"];
+                $packing_qty    = $value["PackingQty"]; // 12
                 $packing_weight = $value["PackingWeight"];
                 $saleunit       = $value["PurchaseUnit"];
-                $qty            = $value["Qty"];
-                $PurchRate      = $value["PurchRate"];
-                $gst            = $value["GST"];
+                $qty            = $value["Qty"]; // 100
+                $PurchRate      = $value["PurchRate"]; // 1200
+                $gst            = $value["GST"]; // 5
 
-                $salerate = $PurchRate + $PurchRate * ($gst / 100);
-                $ItemQty = $packing_qty * $qty;
-                $ItemAmt = $qty * $PurchRate;
+                $PurchRate  = $value["PurchRate"] / $value["PackingQty"]; // 1200 / 12 = 100
+                $salerate   = ($PurchRate + ($PurchRate * ($gst / 100))); // 100 + (100 * (5 / 100)) = 105
+                $ItemQty = $packing_qty * $qty; // 12 * 100 = 1200
+                $ItemAmt = $ItemQty * $PurchRate; // 1200 * 100 = 120000
                 $ItemDisc = 0;
                 $DiscPer = 0;
                 $UnitDisc = 0;
-                if ($value["Discount"] > 0 && $qty > 0) {
-                    $ItemDisc = $value["Discount"] * $qty;
-                    $UnitDisc = $value["Discount"];
-                    $DiscPer = ($value["Discount"] / $PurchRate) * 100;
+                if ($value["Discount"] > 0 && $ItemQty > 0) {
+                    $UnitDisc = $value["Discount"]; // 5
+                    $ItemDisc = $value["Discount"] * $ItemQty; // 5 * 1200 = 6000
+                    $DiscPer = ($value["Discount"] / $PurchRate) * 100; // (5 / 100) * 100 = 5
                 }
-                $ItemTaxableAmt = $ItemAmt - $ItemDisc;
-                $ItemGSTAmt = $ItemTaxableAmt * ($gst / 100);
+                $ItemTaxableAmt = $ItemAmt - $ItemDisc; // 120000 - 6000 = 114000
+                $ItemGSTAmt = $ItemTaxableAmt * ($gst / 100); // 114000 * (5 / 100) = 5700
+                
                 $CGSTPer = null;
                 $SGSTPer = null;
                 $IGSTPer = null;
@@ -2008,6 +2010,7 @@ class PurchaseModel extends App_Model
             $header[] = "SGSTAMT";
             $header[] = "IGSTAMT";
             $header[] = "total_money";
+            $header[] = "BatchNo";
             foreach ($pur_order_detail as $key => $value) {
                 if ($value[0] != "") {
                     $ItemID = $value[0];
@@ -2058,39 +2061,52 @@ class PurchaseModel extends App_Model
 
         // rate update code new ============
         foreach ($es_detail as $value) {
-            $productId  = $value["ItemID"];
-            $qty        = $value["Qty"];
-            $PurchRate  = $value["PurchRate"];
-            $gst        = $value["GST"];
+            $productId      = $value["ItemID"];
+            $brand          = $value["Brand"];
+            $unit           = $value["MeasuredIn"];
+            $packing_qty    = $value["PackingQty"]; // 12
+            $packing_weight = $value["PackingWeight"];
+            $saleunit       = $value["PurchaseUnit"];
+            $qty            = $value["Qty"]; // 100
+            $PurchRate      = $value["PurchRate"]; // 1200
+            $gst            = $value["GST"]; // 5
 
-            $salerate = $PurchRate + $PurchRate * ($gst / 100);
-            $ItemAmt = $qty * $PurchRate;
+            $PurchRate  = $value["PurchRate"] / $value["PackingQty"]; // 1200 / 12 = 100
+            $salerate   = ($PurchRate + ($PurchRate * ($gst / 100))); // 100 + (100 * (5 / 100)) = 105
+            $ItemQty = $packing_qty * $qty; // 12 * 100 = 1200
+            $ItemAmt = $ItemQty * $PurchRate; // 1200 * 100 = 120000
             $ItemDisc = 0;
             $DiscPer = 0;
             $UnitDisc = 0;
-            if ($value["Discount"] > 0 && $qty > 0) {
-                $ItemDisc = $value["Discount"] * $qty;
-                $UnitDisc = $value["Discount"];
-                $DiscPer = ($value["Discount"] / $PurchRate) * 100;
+            if ($value["Discount"] > 0 && $ItemQty > 0) {
+                $UnitDisc = $value["Discount"]; // 5
+                $ItemDisc = $value["Discount"] * $ItemQty; // 5 * 1200 = 6000
+                $DiscPer = ($value["Discount"] / $PurchRate) * 100; // (5 / 100) * 100 = 5
             }
-            $ItemTaxableAmt = $ItemAmt - $ItemDisc;
-            $ItemGSTAmt = $ItemTaxableAmt * ($gst / 100);
-
-            // $CGSTPer = null;
-            // $SGSTPer = null;
-            // $IGSTPer = null;
-            // $CGSTAmt = 0;
-            // $SGSTAmt = 0;
-            // $IGSTAmt = 0;
-            // if ($CenterState == $State) {
-            //     $CGSTPer = $gst / 2;
-            //     $SGSTPer = $gst / 2;
-            //     $CGSTAmt = $ItemGSTAmt / 2;
-            //     $SGSTAmt = $ItemGSTAmt / 2;
-            // } else {
-            //     $IGSTPer = $gst;
-            //     $IGSTAmt = $ItemGSTAmt;
-            // }
+            $ItemTaxableAmt = $ItemAmt - $ItemDisc; // 120000 - 6000 = 114000
+            $ItemGSTAmt = $ItemTaxableAmt * ($gst / 100); // 114000 * (5 / 100) = 5700
+            $CGSTPer = null;
+            $SGSTPer = null;
+            $IGSTPer = null;
+            $CGSTAmt = 0;
+            $SGSTAmt = 0;
+            $IGSTAmt = 0;
+            if ($CenterState == $State) {
+                $CGSTPer = $gst / 2;
+                $SGSTPer = $gst / 2;
+                $CGSTAmt = $ItemGSTAmt / 2;
+                $SGSTAmt = $ItemGSTAmt / 2;
+            } else {
+                $IGSTPer = $gst;
+                $IGSTAmt = $ItemGSTAmt;
+            }
+            $ItemNetAmt = $ItemTaxableAmt + $ItemGSTAmt;
+            $TotalPurchAmt += $ItemAmt;
+            $TotalDISCAmt += $ItemDisc;
+            $TotalCGSTAmt += $CGSTAmt;
+            $TotalSGSTAmt += $SGSTAmt;
+            $TotalIGSTAmt += $IGSTAmt;
+            $TotalNetAmt += $ItemNetAmt;
 
             $data_array_result = [
                 "PurchRate" => $PurchRate,
@@ -2098,18 +2114,26 @@ class PurchaseModel extends App_Model
                 "BasicRate" => $PurchRate,
                 "DiscPerc" => $DiscPer,
                 "DiscAmt" => $UnitDisc,
+                "cgst" => $CGSTPer,
+                "cgstamt" => $CGSTAmt,
+                "sgst" => $SGSTPer,
+                "sgstamt" => $SGSTAmt,
+                "igst" => $IGSTPer,
+                "igstamt" => $IGSTAmt,
                 "OrderAmt" => $ItemAmt,
                 "ChallanAmt" => $ItemAmt,
+                "NetOrderAmt" => $ItemNetAmt,
+                "NetChallanAmt" => $ItemNetAmt,
                 "UserID2" => $_SESSION["username"],
                 "Lupdate" => date("Y-m-d H:i:s"),
             ];
             
             $this->db->where([
                 "TransID" => $Inv_No,
-                "OrderQty" => $qty,
+                "OrderQty" => $ItemQty,
                 "ItemID" => $productId,
                 "AccountID" => $VendorID,
-                // "BatchNo" => $value["BatchNo"]
+                "BatchNo" => $value["BatchNo"]
             ]);
             $this->db->update(db_prefix() . "K1history", $data_array_result);
         }
@@ -2119,6 +2143,9 @@ class PurchaseModel extends App_Model
         $this->db->from(db_prefix() . "clients");
         $this->db->where(db_prefix() . "clients.AccountID", $VendorID);
         $traderlist = $this->db->get()->row();
+        
+        $roundedTotal = round($TotalNetAmt + $OtherAmt);
+        $roundOffAmt = $roundedTotal - ($TotalNetAmt + $OtherAmt);
         $KirtiOnePurchMaster = [
             "Is_Ledger" => "Y",
             "OrderStatus" => "F",
@@ -2128,8 +2155,14 @@ class PurchaseModel extends App_Model
             "PaymentMode" => $PaymentMode,
             "PaymentMethod" => $PaymentMethod,
             "RefNo" => $Refno,
-			"Invamt" => $invoiceamt,
             "EffectOn" => $Effecton,
+            "Purchamt"  => $TotalPurchAmt,
+            "Discamt"   => $TotalDISCAmt,
+            "cgstamt"   => $TotalCGSTAmt,
+            "sgstamt"   => $TotalSGSTAmt,
+            "igstamt"   => $TotalIGSTAmt,
+            "RoundOffAmt" => $roundOffAmt,
+            "Invamt"    => $roundedTotal,
             "UserID2" => $_SESSION["username"],
             "Lupdate" => date("Y-m-d H:i:s"),
         ];
@@ -3394,26 +3427,27 @@ class PurchaseModel extends App_Model
                 $productId      = $value["ItemID"];
                 $brand          = $value["Brand"];
                 $unit           = $value["MeasuredIn"];
-                $packing_qty    = $value["PackingQty"];
+                $packing_qty    = $value["PackingQty"]; // 12
                 $packing_weight = $value["PackingWeight"];
                 $saleunit       = $value["PurchaseUnit"];
-                $qty            = $value["Qty"];
-                $PurchRate      = $value["PurchRate"];
-                $gst            = $value["GST"];
+                $qty            = $value["Qty"]; // 100
+                $PurchRate      = $value["PurchRate"]; // 1200
+                $gst            = $value["GST"]; // 5
 
-                $salerate = $PurchRate + $PurchRate * ($gst / 100);
-                $ItemQty = $packing_qty * $qty;
-                $ItemAmt = $qty * $PurchRate;
+                $PurchRate  = $value["PurchRate"] / $value["PackingQty"]; // 1200 / 12 = 100
+                $salerate   = ($PurchRate + ($PurchRate * ($gst / 100))); // 100 + (100 * (5 / 100)) = 105
+                $ItemQty = $packing_qty * $qty; // 12 * 100 = 1200
+                $ItemAmt = $ItemQty * $PurchRate; // 1200 * 100 = 120000
                 $ItemDisc = 0;
                 $DiscPer = 0;
                 $UnitDisc = 0;
-                if ($value["Discount"] > 0 && $qty > 0) {
-                    $UnitDisc = $value["Discount"];
-                    $ItemDisc = $value["Discount"] * $qty;
-                    $DiscPer = ($value["Discount"] / $PurchRate) * 100;
+                if ($value["Discount"] > 0 && $ItemQty > 0) {
+                    $UnitDisc = $value["Discount"]; // 5
+                    $ItemDisc = $value["Discount"] * $ItemQty; // 5 * 1200 = 6000
+                    $DiscPer = ($value["Discount"] / $PurchRate) * 100; // (5 / 100) * 100 = 5
                 }
-                $ItemTaxableAmt = $ItemAmt - $ItemDisc;
-                $ItemGSTAmt = $ItemTaxableAmt * ($gst / 100);
+                $ItemTaxableAmt = $ItemAmt - $ItemDisc; // 120000 - 6000 = 114000
+                $ItemGSTAmt = $ItemTaxableAmt * ($gst / 100); // 114000 * (5 / 100) = 5700
                 $CGSTPer = null;
                 $SGSTPer = null;
                 $IGSTPer = null;
@@ -3602,29 +3636,30 @@ class PurchaseModel extends App_Model
             $TotalNetAmt = 0;
             foreach ($es_detail as $value) {
                 $productId      = $value["ItemID"];
-                $Ordinalno      = $value["Ordinalno"];
                 $brand          = $value["Brand"];
                 $unit           = $value["MeasuredIn"];
-                $packing_qty    = $value["PackingQty"];
+                $packing_qty    = $value["PackingQty"]; // 12
                 $packing_weight = $value["PackingWeight"];
                 $saleunit       = $value["PurchaseUnit"];
-                $qty            = $value["Qty"];
-                $PurchRate      = $value["PurchRate"];
-                $gst            = $value["GST"];
+                $qty            = $value["Qty"]; // 100
+                $PurchRate      = $value["PurchRate"]; // 1200
+                $gst            = $value["GST"]; // 5
 
-                $salerate = $PurchRate + $PurchRate * ($gst / 100);
-                $ItemQty = $packing_qty * $qty;
-                $ItemAmt = $qty * $PurchRate;
+                $PurchRate  = $value["PurchRate"] / $value["PackingQty"]; // 1200 / 12 = 100
+                $salerate   = ($PurchRate + ($PurchRate * ($gst / 100))); // 100 + (100 * (5 / 100)) = 105
+                $ItemQty = $packing_qty * $qty; // 12 * 100 = 1200
+                $ItemAmt = $ItemQty * $PurchRate; // 1200 * 100 = 120000
                 $ItemDisc = 0;
                 $DiscPer = 0;
                 $UnitDisc = 0;
-                if ($value["Discount"] > 0 && $qty > 0) {
-                    $ItemDisc = $value["Discount"] * $qty;
-                    $UnitDisc = $value["Discount"];
-                    $DiscPer = ($value["Discount"] / $PurchRate) * 100;
+                if ($value["Discount"] > 0 && $ItemQty > 0) {
+                    $UnitDisc = $value["Discount"]; // 5
+                    $ItemDisc = $value["Discount"] * $ItemQty; // 5 * 1200 = 6000
+                    $DiscPer = ($value["Discount"] / $PurchRate) * 100; // (5 / 100) * 100 = 5
                 }
-                $ItemTaxableAmt = $ItemAmt - $ItemDisc;
-                $ItemGSTAmt = $ItemTaxableAmt * ($gst / 100);
+                $ItemTaxableAmt = $ItemAmt - $ItemDisc; // 120000 - 6000 = 114000
+                $ItemGSTAmt = $ItemTaxableAmt * ($gst / 100); // 114000 * (5 / 100) = 5700
+
                 $CGSTPer = null;
                 $SGSTPer = null;
                 $IGSTPer = null;
@@ -3986,6 +4021,7 @@ class PurchaseModel extends App_Model
             $header[] = "SGSTAMT";
             $header[] = "IGSTAMT";
             $header[] = "total_money";
+            $header[] = "BatchNo";
             foreach ($pur_order_detail as $key => $value) {
                 if ($value[0] != "") {
                     $es_detail[] = array_combine($header, $value);
@@ -4034,39 +4070,67 @@ class PurchaseModel extends App_Model
             $PaymentNo = null;
         }
 
+        // get center details
+        $this->db->select("tblCenterMaster.*");
+        $this->db->from(db_prefix() . "CenterMaster");
+        $this->db->where(db_prefix() . "CenterMaster.CenterID", $InvData->CenterID);
+        $CenterDetails = $this->db->get()->row();
+        $CenterState = $CenterDetails->state;
+
+        // get vendor details
+        $this->db->select("tblclients.*");
+        $this->db->from(db_prefix() . "clients");
+        $this->db->where(db_prefix() . "clients.AccountID", $InvData->AccountID);
+        $State = $this->db->get()->row()->state ?? '';
+
         // rate update code new ============
         foreach ($es_detail as $value) {
-            $productId = $value["ItemID"];
-            $qty = $value["Qty"];
-            $PurchRate = $value["PurchRate"];
-            $gst = $value["GST"];
-            $salerate = $PurchRate + $PurchRate * ($gst / 100);
-            $ItemAmt = $qty * $PurchRate;
+            $productId      = $value["ItemID"];
+            $brand          = $value["Brand"];
+            $unit           = $value["MeasuredIn"];
+            $packing_qty    = $value["PackingQty"]; // 12
+            $packing_weight = $value["PackingWeight"];
+            $saleunit       = $value["PurchaseUnit"];
+            $qty            = $value["Qty"]; // 100
+            $PurchRate      = $value["PurchRate"]; // 1200
+            $gst            = $value["GST"]; // 5
+
+            $PurchRate  = $value["PurchRate"] / $value["PackingQty"]; // 1200 / 12 = 100
+            $salerate   = ($PurchRate + ($PurchRate * ($gst / 100))); // 100 + (100 * (5 / 100)) = 105
+            $ItemQty = $packing_qty * $qty; // 12 * 100 = 1200
+            $ItemAmt = $ItemQty * $PurchRate; // 1200 * 100 = 120000
             $ItemDisc = 0;
             $DiscPer = 0;
             $UnitDisc = 0;
-            if ($value["Discount"] > 0 && $qty > 0) {
-                $ItemDisc = $value["Discount"] * $qty;
-                $UnitDisc = $value["Discount"];
-                $DiscPer = ($value["Discount"] / $PurchRate) * 100;
+            if ($value["Discount"] > 0 && $ItemQty > 0) {
+                $UnitDisc = $value["Discount"]; // 5
+                $ItemDisc = $value["Discount"] * $ItemQty; // 5 * 1200 = 6000
+                $DiscPer = ($value["Discount"] / $PurchRate) * 100; // (5 / 100) * 100 = 5
             }
-            $ItemTaxableAmt = $ItemAmt - $ItemDisc;
-            $ItemGSTAmt = $ItemTaxableAmt * ($gst / 100);
-            // $CGSTPer = null;
-            // $SGSTPer = null;
-            // $IGSTPer = null;
-            // $CGSTAmt = 0;
-            // $SGSTAmt = 0;
-            // $IGSTAmt = 0;
-            // if ($CenterState == $State) {
-            //     $CGSTPer = $gst / 2;
-            //     $SGSTPer = $gst / 2;
-            //     $CGSTAmt = $ItemGSTAmt / 2;
-            //     $SGSTAmt = $ItemGSTAmt / 2;
-            // } else {
-            //     $IGSTPer = $gst;
-            //     $IGSTAmt = $ItemGSTAmt;
-            // }
+            $ItemTaxableAmt = $ItemAmt - $ItemDisc; // 120000 - 6000 = 114000
+            $ItemGSTAmt = $ItemTaxableAmt * ($gst / 100); // 114000 * (5 / 100) = 5700
+            $CGSTPer = null;
+            $SGSTPer = null;
+            $IGSTPer = null;
+            $CGSTAmt = 0;
+            $SGSTAmt = 0;
+            $IGSTAmt = 0;
+            if ($CenterState == $State) {
+                $CGSTPer = $gst / 2;
+                $SGSTPer = $gst / 2;
+                $CGSTAmt = $ItemGSTAmt / 2;
+                $SGSTAmt = $ItemGSTAmt / 2;
+            } else {
+                $IGSTPer = $gst;
+                $IGSTAmt = $ItemGSTAmt;
+            }
+            $ItemNetAmt = $ItemTaxableAmt + $ItemGSTAmt;
+            $TotalPurchAmt += $ItemAmt;
+            $TotalDISCAmt += $ItemDisc;
+            $TotalCGSTAmt += $CGSTAmt;
+            $TotalSGSTAmt += $SGSTAmt;
+            $TotalIGSTAmt += $IGSTAmt;
+            $TotalNetAmt += $ItemNetAmt;
 
             $data_array_result = [
                 "PurchRate" => $PurchRate,
@@ -4074,17 +4138,26 @@ class PurchaseModel extends App_Model
                 "BasicRate" => $PurchRate,
                 "DiscPerc" => $DiscPer,
                 "DiscAmt" => $UnitDisc,
+                "cgst" => $CGSTPer,
+                "cgstamt" => $CGSTAmt,
+                "sgst" => $SGSTPer,
+                "sgstamt" => $SGSTAmt,
+                "igst" => $IGSTPer,
+                "igstamt" => $IGSTAmt,
                 "OrderAmt" => $ItemAmt,
                 "ChallanAmt" => $ItemAmt,
+                "NetOrderAmt" => $ItemNetAmt,
+                "NetChallanAmt" => $ItemNetAmt,
                 "UserID2" => $_SESSION["username"],
                 "Lupdate" => date("Y-m-d H:i:s"),
             ];
+            
             $this->db->where([
                 "TransID" => $Inv_No,
-                "OrderQty" => $qty,
+                "OrderQty" => $ItemQty,
                 "ItemID" => $productId,
                 "AccountID" => $VendorID,
-                // "BatchNo" => $value["BatchNo"]
+                "BatchNo" => $value["BatchNo"]
             ]);
             $this->db->update(db_prefix() . "K1history", $data_array_result);
         }
@@ -4094,6 +4167,9 @@ class PurchaseModel extends App_Model
         $this->db->from(db_prefix() . "K1purchasemaster");
         $this->db->where(db_prefix() . "K1purchasemaster.Inv_No", $Inv_No);
         $purchaselist = $this->db->get()->row();
+        
+        $roundedTotal = round($TotalNetAmt + $OtherAmt);
+        $roundOffAmt = $roundedTotal - ($TotalNetAmt + $OtherAmt);
         $data_array = [
             "Is_Ledger" => "Y",
             "OrderStatus" => "F",
@@ -4103,9 +4179,15 @@ class PurchaseModel extends App_Model
             "PaymentMode" => $PaymentMode,
             "PaymentMethod" => $PaymentMethod,
             "RefNo" => $Refno,
-			"Invamt" => $invoiceamt,
             "EffectOn" => $Effecton,
             "ItCount" => $ItCount,
+            "Purchamt"  => $TotalPurchAmt,
+            "Discamt"   => $TotalDISCAmt,
+            "cgstamt"   => $TotalCGSTAmt,
+            "sgstamt"   => $TotalSGSTAmt,
+            "igstamt"   => $TotalIGSTAmt,
+            "RoundOffAmt" => $roundOffAmt,
+            "Invamt"    => $roundedTotal,
             "Lupdate" => date("Y-m-d H:i:s"),
             "UserID2" => $this->session->userdata("username"),
         ];
@@ -6594,6 +6676,9 @@ class PurchaseModel extends App_Model
             } else {
                 $row["OrderQty"] = $row["OrderQty"] / $row["PackingQty"];
             }
+            $row['PurchRate']   = $row['PurchRate'] * $row['PackingQty'];
+            $row['SaleRate']    = $row['SaleRate'] * $row['PackingQty'];
+            $row['BasicRate']   = $row['BasicRate'] * $row['PackingQty'];
         }
         return $results;
     }
@@ -6703,6 +6788,10 @@ class PurchaseModel extends App_Model
         $this->db->order_by(db_prefix() . "K1history.Ordinalno", "ASC");
         $results = $this->db->get()->result_array();
         foreach ($results as &$row) {
+            $row["PurchRate"] = $row["PurchRate"] * $row["PackingQty"];
+            $row["SaleRate"] = $row["SaleRate"] * $row["PackingQty"];
+            $row["BasicRate"] = $row["BasicRate"] * $row["PackingQty"];
+
             $row["PendingQty"] = $row["PRQty"] - $row["PenQty"];
             if ($row["PackingQty"] == 1) {
                 $row["OrderQty"] = $row["OrderQty"];
@@ -7717,6 +7806,9 @@ class PurchaseModel extends App_Model
         $final = [];
 
         foreach ($results as $row) {
+            $row['PurchRate'] = $row['PurchRate'] * $row['PackingQty'];
+            $row['SaleRate'] = $row['SaleRate'] * $row['PackingQty'];
+            $row['BasicRate'] = $row['BasicRate'] * $row['PackingQty'];
 
             // Convert Order Qty
             $orderQty = ($row['PackingQty'] > 1)
@@ -7821,6 +7913,10 @@ class PurchaseModel extends App_Model
         $this->db->where(db_prefix() . "K1history.FY", $fy);
         $results = $this->db->get()->result_array();
         foreach ($results as &$row) {
+            $row['PurchRate'] = $row['PurchRate'] * $row['PackingQty'];
+            $row['SaleRate'] = $row['SaleRate'] * $row['PackingQty'];
+            $row['BasicRate'] = $row['BasicRate'] * $row['PackingQty'];
+            
             if ($row["PackingQty"] == 1) {
                 $row["OrderQty"] = $row["OrderQty"];
             } else {

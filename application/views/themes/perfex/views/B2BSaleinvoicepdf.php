@@ -15,7 +15,7 @@
 	$count = 0;
 	$count_order = count($get_order_list);
 	$PartGSTIN = $invoice->PartyGSTIN;
-	// print_r($get_order_list);
+	// echo '<pre>'; print_r($get_order_list); die;
 	$html = '';
 	foreach ($get_order_list as $key => $order_detail) {
 		
@@ -167,7 +167,7 @@
 			$amt = $amt + $item['ChallanAmt'];
 			$html .= '<td width="6%" style="text-align:right;">'.round($item['DiscAmt'],2) .'</td>';
 			$dis_amt = $dis_amt + $item['DiscAmt'];
-			if($client_detail->state == "MH"){
+			if($client_detail->state == "MH" || $order_detail["state"] == $order_detail["CenterState"]){
 				$gst_rate = $item['cgst'] + $item['sgst'];
 				$gst_rate = $gst_rate.".00";
 				$scgst = $item['cgstamt'] * 2;
@@ -239,7 +239,7 @@
 		</tr>';
 		$TotalTaxableAmt = 0;
 		$TotalCGSTAmt = 0;$TotalSGSTAmt = 0;$TotalIGSTAmt = 0;
-		if($client_detail->state == "MH"){
+		if($client_detail->state == "MH" || $order_detail["state"] == $order_detail["CenterState"]){
 			$gst_detail = get_k1gst_details($order_detail["OrderID"]);
 			
 			$gst_count = count($gst_detail);
@@ -344,7 +344,7 @@
 		
 		
 		$html .='<tr>'; 
-		if($client_detail->state == "MH"){
+		if($client_detail->state == "MH" || $order_detail["state"] == $order_detail["CenterState"]){
 			$bank_rowspan='rowspan="7"';
 			}else {
 			$bank_rowspan='rowspan="6"';
@@ -361,7 +361,7 @@
 			$BankMsg = '';
 		}
 		$html .='<td colspan="8" '.$bank_rowspan.'>'.$BankMsg.'</td>';
-		if($client_detail->state == "MH"){
+		if($client_detail->state == "MH" || $order_detail["state"] == $order_detail["CenterState"]){
 			$html .='<td colspan="3">Add CGST</td>';
 			$grand_csgst = $gst_total / 2;
 			$html .='<td '.$colspan_taxable_amt.' style="text-align:right;">'.number_format($TotalCGSTAmt, 2, '.', '').'</td>';
@@ -372,7 +372,7 @@
 		
 		$html .='</tr>'; 
 		
-		if($client_detail->state == "MH"){
+		if($client_detail->state == "MH" || $order_detail["state"] == $order_detail["CenterState"]){
 			$html .='<tr>'; 
 			$html .='<td colspan="3">Add SGST</td>';
 			$html .='<td '.$colspan_taxable_amt.' style="text-align:right;">'.number_format($TotalSGSTAmt, 2, '.', '').'</td>';
