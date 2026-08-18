@@ -35,4 +35,150 @@ class Cron extends App_Controller
         $this->PurchaseModel->process_purchase_order_reminders();
         echo 'Purchase Order reminder cron executed.';
     }
+
+    public function generate_database_backup()
+    {
+            $tables = ['tblaccountledger','tblK1history'];
+
+            // Backup directory
+            $backupPath = APPPATH . 'storage/backups/';
+
+            // Create directory if not exists
+            if (!is_dir($backupPath)) {
+                    mkdir($backupPath, 0755, true);
+            }
+
+            // File name
+            $fileName = 'db_backup_' . date('Y-m-d_H-i-s') . '.sql';
+            $filePath = $backupPath . $fileName;
+
+            // Open file
+            $handle = fopen($filePath, 'w');
+
+            if (!$handle) {
+                    show_error('Unable to create backup file.');
+                    return;
+            }
+
+            // Backup header
+            fwrite($handle, "-- Database Backup\n");
+            fwrite($handle, "-- Date: " . date('Y-m-d H:i:s') . "\n");
+            fwrite($handle, "-- Tables: " . implode(', ', $tables) . "\n\n");
+
+            fwrite($handle, "SET FOREIGN_KEY_CHECKS=0;\n\n");
+
+            // Process selected tables
+            foreach ($tables as $table) {
+                    // Security check for table name
+                    if (!preg_match('/^[a-zA-Z0-9_]+$/', $table)) {
+                            continue;
+                    }
+                    // Check table exists
+                    if (!$this->db->table_exists($table)) {
+                            fwrite(
+                                    $handle,
+                                    "-- Table not found: {$table}\n\n"
+                            );
+
+                            continue;
+                    }
+
+                    fwrite($handle, "\n");
+                    fwrite($handle, "-- ------------------------------------------\n");
+                    fwrite($handle, "-- Table: {$table}\n");
+                    fwrite($handle, "-- ------------------------------------------\n\n");
+
+                    // Get CREATE TABLE statement
+                    $createQuery = $this->db->query(
+                            "SHOW CREATE TABLE `{$table}`"
+                    );
+
+                    if ($createQuery->num_rows() > 0) {
+
+                            $createRow = $createQuery->row_array();
+
+                            $createSql = $createRow['Create Table'];
+
+                            fwrite(
+                                    $handle,
+                                    "DROP TABLE IF EXISTS `{$table}`;\n\n"
+                            );
+
+                            fwrite(
+                                    $handle,
+                                    $createSql . ";\n\n"
+                            );
+                    }
+
+                    // Get table data
+                    $query = $this->db->get($table);
+
+                    $batchSize = 50;
+                    $batchRows = [];
+
+                    foreach ($query->result_array() as $row) {
+
+                            $columns = [];
+                            $values  = [];
+
+                            foreach ($row as $column => $value) {
+
+                                    $columns[] = '`' . $column . '`';
+
+                                    if ($value === null) {
+                                            $values[] = 'NULL';
+                                    } else {
+                                            $values[] = $this->db->escape($value);
+                                    }
+                            }
+
+                            $batchRows[] = '(' . implode(', ', $values) . ')';
+
+                            // Write every 50 rows
+                            if (count($batchRows) >= $batchSize) {
+
+                                    $insertSql =
+                                            "INSERT INTO `{$table}` (" .
+                                            implode(', ', $columns) .
+                                            ") VALUES\n" .
+                                            implode(",\n", $batchRows) .
+                                            ";\n";
+
+                                    fwrite($handle, $insertSql);
+
+                                    $batchRows = [];
+                            }
+                    }
+
+                    // Write remaining rows
+                    if (!empty($batchRows)) {
+
+                            $insertSql =
+                                    "INSERT INTO `{$table}` (" .
+                                    implode(', ', $columns) .
+                                    ") VALUES\n" .
+                                    implode(",\n", $batchRows) .
+                                    ";\n";
+
+                            fwrite($handle, $insertSql);
+                    }
+
+                    fwrite($handle, "\n");
+            }
+
+            fwrite($handle, "\nSET FOREIGN_KEY_CHECKS=1;\n");
+
+            fclose($handle);
+
+            // Response
+            echo '<pre>';
+            print_r([
+                    'status'   => true,
+                    'message'  => 'Database backup generated successfully.',
+                    'file'     => $fileName,
+                    'path'     => $filePath,
+                    'tables'   => $tables
+            ]);
+            echo '</pre>';
+    }
 }
