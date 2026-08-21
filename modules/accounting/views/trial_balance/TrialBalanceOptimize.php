@@ -2,8 +2,6 @@
 
 <?php init_head(); ?>
 
-
-
 <style>
   .th_total {
     padding-right: 10px;
@@ -13,15 +11,11 @@
   }
 </style>
 
-
-
 <div id="wrapper">
 
   <div class="panel_s">
 
     <div class="panel-body">
-
-
 
       <div class="row">
 
@@ -37,8 +31,6 @@
 
               <li class="breadcrumb-item active" aria-current="page"><b>Trial Balance</b></li>
 
-
-
             </ol>
 
           </nav>
@@ -46,8 +38,6 @@
           <hr class="hr_style" style="margin-Bottom:12px !important;">
 
         </div>
-
-
 
         <div class="col-md-12">
 
@@ -96,8 +86,6 @@
               <?php echo render_date_input('as_on', 'As On', $to_date); ?>
 
             </div>
-
-
 
             <?php
 
@@ -156,8 +144,6 @@
 
             ?>
 
-
-
             <div class="col-md-3">
 
               <div class="form-group" app-field-wrapper="ActSubGroup1">
@@ -202,8 +188,6 @@
 
             </div>
 
-
-
             <?php
 
             if ($filter_data) {
@@ -212,8 +196,6 @@
             }
 
             ?>
-
-
 
             <div class="col-md-3">
 
@@ -267,25 +249,15 @@
 
             <?php echo form_close(); ?>
 
-
-
-
-
           </div>
 
         </div>
 
       </div>
 
-
-
       <div class="row ">
 
-
-
         <div class="col-md-8">
-
-
 
           <div class="page" id="DivIdToPrint">
 
@@ -324,10 +296,12 @@
                     $Counter2 = 3000;
 
                     $i = 1;
+                    $allTotalOpnBal = 0;
+                    $allTotalDrBal = 0;
+                    $allTotalCrBal = 0;
+                    $allTotalClsBal = 0;
 
                     foreach ($nestedData as $key => $val) {
-
-
 
                     ?>
 
@@ -337,17 +311,11 @@
 
                         <td class="parent" colspan="5"><?php echo $val['MainGroup']; ?></td>
 
-
-
                       </tr>
 
                       <?php
 
-
-
                       foreach ($val['SubGroups1'] as $key1 => $val1) {
-
-
 
                       ?>
 
@@ -357,11 +325,7 @@
 
                           <td class="parent" style="font-size:13px;" colspan="5"><?php echo $val1["SubGroup1Name"]; ?></td>
 
-
-
                         </tr>
-
-
 
                         <?php
 
@@ -453,6 +417,8 @@
 
                               <td style="text-align:right;"><?php echo number_format(abs($val3['AccountClsBal']), 2, '.', '') . " " . $CrDr; ?></td>
 
+                            </tr>
+
                             <?php
 
                             $Counter3++;
@@ -464,8 +430,6 @@
 
                           $Counter2++;
                         }
-
-
 
                         if ($i > 1) {
 
@@ -497,8 +461,6 @@
 
                               <td colspan="1" style="font-size:13px;font-weight:600;">Total for <?php echo $val1['SubGroup1Name']; ?></td>
 
-
-
                               <td style="font-size:13px;font-weight:600;text-align:right;"><?php echo number_format($val1['Group1OpnBal'], 2, '.', ''); ?></td>
 
                               <td style="font-size:13px;font-weight:600;text-align:right;"><?php echo number_format($val1['Group1DrBal'], 2, '.', ''); ?></td>
@@ -516,13 +478,9 @@
 
                           ?>
 
-
-
                           <tr style="border: 1px solid #000;">
 
                             <td colspan="1" style="font-size:14px;font-weight:700;">Total for <?php echo $val['MainGroup']; ?></td>
-
-
 
                             <td style="font-size:14px;font-weight:700;text-align:right;"><?php echo number_format($val['MainGroupOpnBal'], 2, '.', ''); ?></td>
 
@@ -536,6 +494,11 @@
 
                         <?php
 
+                        $allTotalOpnBal += $val['MainGroupOpnBal'];
+                        $allTotalDrBal += $val['MainGroupDrBal'];
+                        $allTotalCrBal += $val['MainGroupCrBal'];
+                        $allTotalClsBal += $val['MainGroupClsBal'];
+
                         $MainCounter++;
 
                         $i++;
@@ -543,10 +506,13 @@
 
                         ?>
 
-
-
-
-
+                    <tr style="border: 1px solid #000;">
+                      <td colspan="1" style="font-size:14px;font-weight:700;">All Total</td>
+                      <td style="font-size:14px;font-weight:700;text-align:right;"><?php echo number_format($allTotalOpnBal, 2, '.', ''); ?></td>
+                      <td style="font-size:14px;font-weight:700;text-align:right;"><?php echo number_format($rawCurrentYearTotals['D'], 2, '.', ''); ?></td>
+                      <td style="font-size:14px;font-weight:700;text-align:right;"><?php echo number_format($rawCurrentYearTotals['C'], 2, '.', ''); ?></td>
+                      <td style="font-size:14px;font-weight:700;text-align:right;"><?php echo number_format(abs($allTotalClsBal), 2, '.', ''); ?></td>
+                    </tr>
                   </tbody>
 
                 </table>
@@ -606,10 +572,6 @@
     }
   </style>
 
-
-
-
-
   <script type="text/javascript">
     function printPage() {
 
@@ -643,7 +605,6 @@
 
     };
   </script>
-
 
   <script>
     function RedirectLedger(AccountID) {
@@ -680,7 +641,6 @@
 	}
   </script>
 
-
   <script>
     $('#MainGroup').on('change', function() {
 
@@ -712,8 +672,6 @@
 
         },
 
-
-
         success: function(data) {
 
           $("#ActSubGroup1").find('option').remove();
@@ -741,8 +699,6 @@
       });
 
     })
-
-
 
     $('#ActSubGroup1').on('change', function() {
 
@@ -773,8 +729,6 @@
           $('.searchh2').css('display', 'none');
 
         },
-
-
 
         success: function(data) {
 

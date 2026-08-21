@@ -2742,6 +2742,8 @@ class Accounting extends AdminController
     $selected_company = $this->session->userdata('root_company');
     $fy = $this->session->userdata('finacial_year');
     $last_fy = $fy - 1;
+    $asOnInput = $this->input->post('as_on');
+    $asOnDate = $asOnInput ? to_sql_date($asOnInput) : date('Y-m-d');
 
     $data['company_detail'] = $this->misc_reports_model->get_company_detail();
     $data['title'] = "Trial Balance";
@@ -2824,10 +2826,18 @@ class Accounting extends AdminController
     // ============================================================
 
     $ledger_data = $this->TrialBalance_model
-      ->GetLedgerData($BalanceSheet_head);
+      ->GetLedgerData($BalanceSheet_head, $asOnDate);
+
+    $rawCurrentYearTotals = array('D' => 0, 'C' => 0);
+
+    foreach ($ledger_data->RawCurrentYearTotals as $rawTotal) {
+      $rawCurrentYearTotals[$rawTotal['TType']] = (float)$rawTotal['SUMAmt'];
+    }
+
+    $data['rawCurrentYearTotals'] = $rawCurrentYearTotals;
 
     $staffledger_data = $this->TrialBalance_model
-      ->GetStaffLedgerData($BalanceSheet_head);
+      ->GetStaffLedgerData($BalanceSheet_head, $asOnDate);
 
     $opn_data = $this->TrialBalance_model
       ->GetOpnBalData($BalanceSheet_head);

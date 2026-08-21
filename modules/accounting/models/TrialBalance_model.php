@@ -130,13 +130,16 @@ class TrialBalance_model extends App_Model
 
     }
 
-    public function GetLedgerData($BalanceSheet_head)
+    public function GetLedgerData($BalanceSheet_head, $asOnDate = "")
 
     {
 
         $fy = $this->session->userdata('finacial_year');
 
         $selected_company = $this->session->userdata('root_company');
+
+        $start_date = '20' . $fy . '-04-01';
+        $asOnDate = $asOnDate ?: date('Y-m-d');
 
         // Excluding Trade Payables - Vendor and Trade Receivables - Party
 
@@ -154,15 +157,26 @@ class TrialBalance_model extends App_Model
 
         $this->db->where('tblaccountledger.FY', $fy);
 
-        $this->db->where('tblaccountledger.PlantID', $selected_company);
-
         $this->db->where('tblaccountledger.PartyID', "KASPL");
+
+        $this->db->where('tblaccountledger.Transdate >=', $start_date . ' 00:00:00');
+
+        $this->db->where('tblaccountledger.Transdate <=', $asOnDate . ' 23:59:59');
 
         $this->db->group_by('tblaccountledger.TType,tblclients.AccountID');
 
         $CurrentYrLedger_data = $this->db->get('tblaccountledger')->result_array();
 
         $Ledger_data->Cur_yr_ledger = $CurrentYrLedger_data;
+
+        $this->db->select('tblaccountledger.TType,SUM(tblaccountledger.Amount) AS SUMAmt');
+        $this->db->where('tblaccountledger.FY', $fy);
+        $this->db->where('tblaccountledger.PartyID', "KASPL");
+        $this->db->where('tblaccountledger.Transdate >=', $start_date . ' 00:00:00');
+        $this->db->where('tblaccountledger.Transdate <=', $asOnDate . ' 23:59:59');
+        $this->db->group_by('tblaccountledger.TType');
+
+        $Ledger_data->RawCurrentYearTotals = $this->db->get('tblaccountledger')->result_array();
 
         // Privius year ledger
 
@@ -192,13 +206,16 @@ class TrialBalance_model extends App_Model
 
     }
 
-    public function GetStaffLedgerData($BalanceSheet_head)
+    public function GetStaffLedgerData($BalanceSheet_head, $asOnDate = "")
 
     {
 
       $fy = $this->session->userdata('finacial_year');
 
       $selected_company = $this->session->userdata('root_company');
+
+      $start_date = '20' . $fy . '-04-01';
+      $asOnDate = $asOnDate ?: date('Y-m-d');
 
       
 
@@ -208,7 +225,11 @@ class TrialBalance_model extends App_Model
 
       $this->db->where('tblaccountledger.FY', $fy);
 
-      $this->db->where('tblaccountledger.PlantID', $selected_company);
+      $this->db->where('tblaccountledger.PartyID', "KASPL");
+
+      $this->db->where('tblaccountledger.Transdate >=', $start_date . ' 00:00:00');
+
+      $this->db->where('tblaccountledger.Transdate <=', $asOnDate . ' 23:59:59');
 
       $this->db->group_by('tblaccountledger.TType,tblstaff.AccountID');
 
@@ -227,6 +248,8 @@ class TrialBalance_model extends App_Model
       $this->db->where('tblaccountledger.FY', $last_fy);
 
       $this->db->where('tblaccountledger.PlantID', $selected_company);
+
+      $this->db->where('tblaccountledger.PartyID', "KASPL");
 
       $this->db->group_by('tblaccountledger.TType,tblstaff.AccountID');
 
