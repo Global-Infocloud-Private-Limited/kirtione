@@ -26066,8 +26066,7 @@ class Accounting extends AdminController
       }else if($TransactionType == "Purchase Return"){
         $redirectUrl = admin_url().'PurchaseMaster/AddEditPurchaseReturnInvoice/'.$value["OrderID"];
       }else if($TransactionType == "Purchase"){
-        $redirectUrl = admin_url().'PurchaseMaster/Order/'.$value["OrderID"];
-        // $redirectUrl = admin_url().'PurchaseMaster/AddEditPurchaseOrderNew/'.$value["OrderID"];
+        $redirectUrl = admin_url().'PurchaseMaster/AddEditPurchaseOrderNew/'.$value["OrderID"];
       }else if($TransactionType == "Sale Credit"){
         $redirectUrl = admin_url().'cd_notes/edit/'.$value["OrderID"];
       }else if($TransactionType == "Purchase Debit"){

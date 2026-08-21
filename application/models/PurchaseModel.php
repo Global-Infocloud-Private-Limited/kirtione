@@ -8262,8 +8262,7 @@ class PurchaseModel extends App_Model
         $this->db->order_by("tblK1stockmaster.ExpDate", "ASC");
         $OpnBatchQty = $this->db->get(db_prefix() . "K1stockmaster")->row();
         // Batch List From History
-        $this
-            ->db->select('tblK1history.BatchNo,SUM(tblK1history.BilledQty) AS TotalQty, tblK1history.TType,
+        $this->db->select('tblK1history.BatchNo,SUM(tblK1history.BilledQty) AS TotalQty, tblK1history.TType,
 		tblK1history.TType2,tblK1history.ExpDate,tblK1history.PurchRate,tblK1history.CaseQty');
         $this->db->where("tblK1history.ItemID", $filterdata["ItemID"]);
         $this->db->where("tblK1history.CenterID", $filterdata["CenterID"]);
@@ -8293,37 +8292,19 @@ class PurchaseModel extends App_Model
             $OQty = $OpnBatchQty->TotalOpnQty;
         }
         foreach ($BatchTransaction as $stockkey => $stockval) {
-            if ($stockval["TType"] == "O" && $stockval["TType2"] == "SALE") {
+            if ( $stockval["TType"] == "O" && $stockval["TType2"] == "SALE" ) {
                 $SaleQty += $stockval["TotalQty"];
-            } elseif (
-                $stockval["TType"] == "SR" &&
-                $stockval["TType2"] == "FRESH RETURN"
-            ) {
+            } elseif ( $stockval["TType"] == "SR" && $stockval["TType2"] == "FRESH RETURN" ) {
                 $SaleRtnQty += $stockval["TotalQty"];
-            } elseif (
-                $stockval["TType"] == "P" &&
-                $stockval["TType2"] == "Purchase"
-            ) {
+            } elseif ( $stockval["TType"] == "P" && $stockval["TType2"] == "Purchase" ) {
                 $PurchQty += $stockval["TotalQty"];
-            } elseif (
-                $stockval["TType"] == "P" &&
-                $stockval["TType2"] == "PURCHASE RETURN"
-            ) {
+            } elseif ( $stockval["TType"] == "P" && $stockval["TType2"] == "PURCHASE RETURN" ) {
                 $PurchRtnQty += $stockval["TotalQty"];
-            } elseif (
-                $stockval["TType"] == "T" &&
-                $stockval["TType2"] == "IN"
-            ) {
+            } elseif ( $stockval["TType"] == "T" && $stockval["TType2"] == "IN" ) {
                 $InQty += $stockval["TotalQty"];
-            } elseif (
-                $stockval["TType"] == "T" &&
-                $stockval["TType2"] == "OUT"
-            ) {
+            } elseif ( $stockval["TType"] == "T" && $stockval["TType2"] == "OUT" ) {
                 $OutQty += $stockval["TotalQty"];
-            } elseif (
-                $stockval["TType"] == "I" &&
-                $stockval["TType2"] == "INWARD"
-            ) {
+            } elseif ( $stockval["TType"] == "I" && $stockval["TType2"] == "INWARD" ) {
                 $InwardQty += $stockval["TotalQty"];
             } elseif ($stockval["TType"] == "X") {
                 $AdjQty += $stockval["TotalQty"];
