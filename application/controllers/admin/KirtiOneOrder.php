@@ -2143,4 +2143,532 @@
 			}
 		}
 
+		public function fix_negative_stock_batch_wise()
+		{
+				$fy = '26';
+
+				$this->db->trans_begin();
+
+				try {
+
+						/*
+						* ============================================================
+						* STEP 1: FIND NEGATIVE STOCK BATCHES
+						* ============================================================
+						*/
+						$negativeSql = "
+								SELECT
+										s.ItemID,
+										s.CenterID,
+										s.BatchNo,
+
+										(
+												s.OpeningQty
+												+ COALESCE(h.InwardQty, 0)
+												+ COALESCE(h.PurchQty, 0)
+												- COALESCE(h.PurchRtnQty, 0)
+												- COALESCE(h.SaleQty, 0)
+												+ COALESCE(h.SaleRtnQty, 0)
+												+ COALESCE(h.PrdQty, 0)
+												- COALESCE(h.IssueQty, 0)
+												- COALESCE(h.AdjQty, 0)
+												+ COALESCE(h.InQty, 0)
+												- COALESCE(h.OutQty, 0)
+										) AS BalanceQty
+
+								FROM
+								(
+										SELECT
+												ItemID,
+												CenterID,
+												BatchNo,
+												SUM(OQty) AS OpeningQty
+										FROM tblK1stockmaster
+										WHERE FY = ?
+										GROUP BY
+												ItemID,
+												CenterID,
+												BatchNo
+								) s
+
+								LEFT JOIN
+								(
+										SELECT
+												ItemID,
+												CenterID,
+												BatchNo,
+
+												SUM(CASE
+														WHEN TType = 'I'
+														AND TType2 = 'INWARD'
+														THEN BilledQty ELSE 0
+												END) AS InwardQty,
+
+												SUM(CASE
+														WHEN TType = 'P'
+														AND TType2 = 'Purchase'
+														THEN BilledQty ELSE 0
+												END) AS PurchQty,
+
+												SUM(CASE
+														WHEN TType = 'P'
+														AND TType2 = 'PURCHASE RETURN'
+														THEN BilledQty ELSE 0
+												END) AS PurchRtnQty,
+
+												SUM(CASE
+														WHEN TType = 'O'
+														AND TType2 = 'SALE'
+														THEN BilledQty ELSE 0
+												END) AS SaleQty,
+
+												SUM(CASE
+														WHEN TType = 'SR'
+														AND TType2 = 'FRESH RETURN'
+														THEN BilledQty ELSE 0
+												END) AS SaleRtnQty,
+
+												SUM(CASE
+														WHEN TType = 'T'
+														AND TType2 = 'IN'
+														THEN BilledQty ELSE 0
+												END) AS InQty,
+
+												SUM(CASE
+														WHEN TType = 'T'
+														AND TType2 = 'OUT'
+														THEN BilledQty ELSE 0
+												END) AS OutQty,
+
+												SUM(CASE
+														WHEN TType = 'X'
+														THEN BilledQty ELSE 0
+												END) AS AdjQty,
+
+												SUM(CASE
+														WHEN TType = 'I'
+														AND TType2 = 'PRODUCTION'
+														THEN BilledQty ELSE 0
+												END) AS PrdQty,
+
+												SUM(CASE
+														WHEN TType = 'I'
+														AND TType2 = 'ISSUE'
+														THEN BilledQty ELSE 0
+												END) AS IssueQty
+
+										FROM tblK1history
+
+										WHERE FY = ?
+											AND OrderID IS NOT NULL
+											AND BillID IS NOT NULL
+											AND TransID IS NOT NULL
+
+										GROUP BY
+												ItemID,
+												CenterID,
+												BatchNo
+								) h
+										ON h.ItemID = s.ItemID
+										AND h.CenterID = s.CenterID
+										AND h.BatchNo = s.BatchNo
+
+								HAVING BalanceQty < 0
+
+								ORDER BY
+										s.ItemID,
+										s.CenterID,
+										s.BatchNo
+						";
+
+						$negativeBatches = $this->db
+								->query($negativeSql, [$fy, $fy])
+								->result_array();
+
+
+						$updated = [];
+						$skipped = [];
+
+
+						/*
+						* ============================================================
+						* STEP 2: PROCESS EACH NEGATIVE BATCH
+						* ============================================================
+						*/
+						foreach ($negativeBatches as $negative) {
+
+								$itemID   = $negative['ItemID'];
+								$centerID = $negative['CenterID'];
+								$oldBatch = $negative['BatchNo'];
+
+								$negativeQty = abs((float) $negative['BalanceQty']);
+
+
+								/*
+								* ========================================================
+								* STEP 3: FIND POSITIVE BATCHES
+								* SAME ITEM + SAME CENTER
+								* ========================================================
+								*/
+								$positiveSql = "
+										SELECT
+												s.BatchNo,
+
+												(
+														s.OpeningQty
+														+ COALESCE(h.InwardQty, 0)
+														+ COALESCE(h.PurchQty, 0)
+														- COALESCE(h.PurchRtnQty, 0)
+														- COALESCE(h.SaleQty, 0)
+														+ COALESCE(h.SaleRtnQty, 0)
+														+ COALESCE(h.PrdQty, 0)
+														- COALESCE(h.IssueQty, 0)
+														- COALESCE(h.AdjQty, 0)
+														+ COALESCE(h.InQty, 0)
+														- COALESCE(h.OutQty, 0)
+												) AS BalanceQty
+
+										FROM
+										(
+												SELECT
+														ItemID,
+														CenterID,
+														BatchNo,
+														SUM(OQty) AS OpeningQty
+												FROM tblK1stockmaster
+												WHERE FY = ?
+													AND ItemID = ?
+													AND CenterID = ?
+												GROUP BY
+														ItemID,
+														CenterID,
+														BatchNo
+										) s
+
+										LEFT JOIN
+										(
+												SELECT
+														ItemID,
+														CenterID,
+														BatchNo,
+
+														SUM(CASE
+																WHEN TType = 'I'
+																AND TType2 = 'INWARD'
+																THEN BilledQty ELSE 0
+														END) AS InwardQty,
+
+														SUM(CASE
+																WHEN TType = 'P'
+																AND TType2 = 'Purchase'
+																THEN BilledQty ELSE 0
+														END) AS PurchQty,
+
+														SUM(CASE
+																WHEN TType = 'P'
+																AND TType2 = 'PURCHASE RETURN'
+																THEN BilledQty ELSE 0
+														END) AS PurchRtnQty,
+
+														SUM(CASE
+																WHEN TType = 'O'
+																AND TType2 = 'SALE'
+																THEN BilledQty ELSE 0
+														END) AS SaleQty,
+
+														SUM(CASE
+																WHEN TType = 'SR'
+																AND TType2 = 'FRESH RETURN'
+																THEN BilledQty ELSE 0
+														END) AS SaleRtnQty,
+
+														SUM(CASE
+																WHEN TType = 'T'
+																AND TType2 = 'IN'
+																THEN BilledQty ELSE 0
+														END) AS InQty,
+
+														SUM(CASE
+																WHEN TType = 'T'
+																AND TType2 = 'OUT'
+																THEN BilledQty ELSE 0
+														END) AS OutQty,
+
+														SUM(CASE
+																WHEN TType = 'X'
+																THEN BilledQty ELSE 0
+														END) AS AdjQty,
+
+														SUM(CASE
+																WHEN TType = 'I'
+																AND TType2 = 'PRODUCTION'
+																THEN BilledQty ELSE 0
+														END) AS PrdQty,
+
+														SUM(CASE
+																WHEN TType = 'I'
+																AND TType2 = 'ISSUE'
+																THEN BilledQty ELSE 0
+														END) AS IssueQty
+
+												FROM tblK1history
+
+												WHERE FY = ?
+													AND OrderID IS NOT NULL
+													AND BillID IS NOT NULL
+													AND TransID IS NOT NULL
+
+												GROUP BY
+														ItemID,
+														CenterID,
+														BatchNo
+										) h
+												ON h.ItemID = s.ItemID
+												AND h.CenterID = s.CenterID
+												AND h.BatchNo = s.BatchNo
+
+										WHERE s.BatchNo <> ?
+
+										HAVING BalanceQty > 0
+
+										ORDER BY BalanceQty DESC
+								";
+
+								$positiveBatches = $this->db
+										->query(
+												$positiveSql,
+												[
+														$fy,
+														$itemID,
+														$centerID,
+														$fy,
+														$oldBatch
+												]
+										)
+										->result_array();
+
+
+								if (empty($positiveBatches)) {
+
+										$skipped[] = [
+												'ItemID'       => $itemID,
+												'CenterID'     => $centerID,
+												'OldBatch'     => $oldBatch,
+												'NegativeQty'  => $negativeQty,
+												'Reason'       => 'No positive batch available'
+										];
+
+										continue;
+								}
+
+
+								/*
+								* ========================================================
+								* STEP 4: GET SALE TRANSACTIONS OF NEGATIVE BATCH
+								* ========================================================
+								*/
+								$sales = $this->db
+										->select("
+												LedgerID,
+												TransID,
+												BillID,
+												ItemID,
+												CenterID,
+												BatchNo,
+												BilledQty
+										")
+										->from('tblK1history')
+										->where('FY', $fy)
+										->where('ItemID', $itemID)
+										->where('CenterID', $centerID)
+										->where('BatchNo', $oldBatch)
+										->where('TType', 'O')
+										->where('TType2', 'SALE')
+										->where('OrderID IS NOT NULL', null, false)
+										->where('BillID IS NOT NULL', null, false)
+										->where('TransID IS NOT NULL', null, false)
+										->order_by('TransID', 'ASC')
+										->get()
+										->result_array();
+
+
+								if (empty($sales)) {
+
+										$skipped[] = [
+												'ItemID'       => $itemID,
+												'CenterID'     => $centerID,
+												'OldBatch'     => $oldBatch,
+												'NegativeQty'  => $negativeQty,
+												'Reason'       => 'No SALE transaction found'
+										];
+
+										continue;
+								}
+
+
+								/*
+								* ========================================================
+								* STEP 5:
+								*
+								* MOVE SALE TO POSITIVE BATCH
+								*
+								* IMPORTANT:
+								* Only move complete SALE line if positive batch
+								* has enough stock.
+								* ========================================================
+								*/
+								foreach ($positiveBatches as $positive) {
+
+										if ($negativeQty <= 0) {
+												break;
+										}
+
+										$newBatch    = $positive['BatchNo'];
+										$availableQty = (float) $positive['BalanceQty'];
+
+
+										if ($availableQty <= 0) {
+												continue;
+										}
+
+
+										/*
+										* Find a SALE line which can fit completely
+										* inside this positive batch.
+										*/
+										foreach ($sales as $saleKey => $sale) {
+
+												$saleQty = (float) $sale['BilledQty'];
+
+												if ($saleQty <= 0) {
+														continue;
+												}
+
+
+												/*
+												* Positive batch must have enough quantity
+												* for complete sale line.
+												*/
+												if ($availableQty >= $saleQty) {
+
+														/*
+														* UPDATE SALE BATCH
+														*/
+														$this->db
+																->where('LedgerID', $sale['LedgerID'])
+																->where('ItemID', $itemID)
+																->where('CenterID', $centerID)
+																->where('BatchNo', $oldBatch)
+																->where('TType', 'O')
+																->where('TType2', 'SALE')
+																->update(
+																		'tblK1history',
+																		[
+																				'BatchNo' => $newBatch
+																		]
+																);
+
+
+														if ($this->db->affected_rows() > 0) {
+
+																$updated[] = [
+																		'LedgerID'      => $sale['LedgerID'],
+																		'ItemID'        => $itemID,
+																		'CenterID'      => $centerID,
+																		'OldBatch'      => $oldBatch,
+																		'NewBatch'      => $newBatch,
+																		'SaleQty'       => $saleQty,
+																		'OldNegative'   => $negativeQty,
+																		'BatchAvailable'=> $availableQty
+																];
+
+
+																/*
+																* Reduce available stock of new batch.
+																*/
+																$availableQty -= $saleQty;
+
+																/*
+																* Reduce negative quantity.
+																*/
+																$negativeQty -= $saleQty;
+
+
+																/*
+																* Remove processed sale from array.
+																*/
+																unset($sales[$saleKey]);
+														}
+												}
+										}
+								}
+
+
+								/*
+								* ========================================================
+								* STEP 6: IF STILL NEGATIVE
+								* ========================================================
+								*/
+								if ($negativeQty > 0) {
+
+										$skipped[] = [
+												'ItemID'       => $itemID,
+												'CenterID'     => $centerID,
+												'OldBatch'     => $oldBatch,
+												'RemainingQty' => $negativeQty,
+												'Reason'       => 'Positive stock available but not enough to move complete SALE lines'
+										];
+								}
+						}
+
+
+						/*
+						* ============================================================
+						* STEP 7: TRANSACTION CHECK
+						* ============================================================
+						*/
+						if ($this->db->trans_status() === false) {
+
+								$this->db->trans_rollback();
+
+								return [
+										'status'  => false,
+										'message' => 'Negative stock correction failed.',
+										'updated' => [],
+										'skipped' => []
+								];
+						}
+
+
+						$this->db->trans_commit();
+
+
+						/*
+						* ============================================================
+						* FINAL RESPONSE
+						* ============================================================
+						*/
+						return [
+								'status'          => true,
+								'message'         => 'Negative stock correction completed.',
+								'negative_batches' => count($negativeBatches),
+								'updated_count'   => count($updated),
+								'skipped_count'   => count($skipped),
+								'updated'         => $updated,
+								'skipped'         => $skipped
+						];
+
+
+				} catch (Exception $e) {
+
+						$this->db->trans_rollback();
+
+						return [
+								'status'  => false,
+								'message' => $e->getMessage(),
+								'updated' => [],
+								'skipped' => []
+						];
+				}
+		}
 	}															
