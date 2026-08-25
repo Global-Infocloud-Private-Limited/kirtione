@@ -1100,7 +1100,7 @@ class PurchaseModel extends App_Model
                     "FY" => $FY,
                     "OrderID" => $PurchID,
                     "BillID" => $PurchReqNo,
-                    "TransDate" => date("Y-m-d H:i:s"),
+                    "TransDate" => $Transdate,
                     "TransDate2" => date("Y-m-d H:i:s"),
                     "TType" => "P",
                     "TType2" => "Purchase",
@@ -7591,6 +7591,117 @@ class PurchaseModel extends App_Model
             return $this->db->get("tblK1history")->result_array();
         }
     }
+
+    public function getFilterPurchaseList($data)
+    {
+        $UserID = $this->session->userdata("username");
+        $from_date = to_sql_date($data["from_date"]);
+        $to_date = to_sql_date($data["to_date"]);
+        if ($data["Report_type"] == "1") {
+            switch($data["Entry_type"]){
+                case "1":
+                    $tbl = "tblK1PurchaseOrderMaster";
+                    $this->db->select("$tbl.*,tblCenterMaster.CenterName,tblCenterMaster.GSTNo,tblclients.company");
+                    break;
+                
+                case "2":
+                    $tbl = "tblK1purchasemaster";
+                    $this->db->select("$tbl.*,tblCenterMaster.CenterName,tblCenterMaster.GSTNo,tblclients.company");
+                    break;
+                
+                default:
+                    $tbl = "tblK1purchasemaster";
+                    $this->db->select("$tbl.*,tblCenterMaster.CenterName,tblCenterMaster.GSTNo,tblclients.company");
+                    break;
+                    
+            }
+            
+            if (!is_admin()) {
+                $this->db->join("tblstaff_wise_center","tblstaff_wise_center.CenterID = $tbl.CenterID");
+                $this->db->where("tblstaff_wise_center.AccountID", $UserID);
+            }
+            $this->db->where( "$tbl.Transdate >=", $from_date . " 00:00:00" );
+            $this->db->where( "$tbl.Transdate <=", $to_date . " 23:59:59" );
+
+            if (!empty($data["order_status"])) {
+                $this->db->where("$tbl.OrderStatus",$data["order_status"]);
+            }
+            if (!empty($data["AccountID"])) {
+                $this->db->where("$tbl.AccountID",$data["AccountID"]);
+            }
+            if (!empty($data["CenterID"])) {
+                $this->db->where("$tbl.CenterID",$data["CenterID"]);
+            }
+            
+            $this->db->join("tblCenterMaster","tblCenterMaster.CenterID = $tbl.CenterID");
+            $this->db->join("tblclients","tblclients.AccountID = $tbl.AccountID");
+            if($data["Entry_type"] == ''){
+                $this->db->where("$tbl.Is_Ledger","Y");
+            }
+            $this->db->where("$tbl.PurchID IS NOT NULL");
+            $this->db->order_by("$tbl.PurchID", "DESC");
+            return $this->db->get("$tbl")->result_array();
+        } else {
+            switch ($data["Entry_type"]) {
+                case "1":
+                    $tbl = "tblK1PurchaseOrderMaster";
+                    $tblJoin = "tblK1PurchaseOrderMaster.PurchID = tblK1history.OrderID";
+                    $ttypeWhere = ['tblK1history.TType' => 'P', 'tblK1history.TType2' => 'Purchase Order'];
+                    $this->db->select("tblK1history.*,$tbl.InvoiceNo, tblCenterMaster.CenterName,tblCenterMaster.GSTNo,$tbl.OrderStatus,tblproduct.ProductName,tblproduct.hsn_code,tblproduct.unit,tblproduct.PackingQty,tblclients.company,$tbl.PurchID,tblGstRecord.gstin");
+                    break;
+
+                case "2":
+                    $tbl = "tblK1purchasemaster";
+                    $tblJoin = "tblK1purchasemaster.Inv_No = tblK1history.TransID";
+                    $ttypeWhere = ['tblK1history.TType' => 'P', 'tblK1history.TType2' => 'Purchase'];
+                    $this->db->select("tblK1history.*,$tbl.InvoiceNo,$tbl.Inv_No,tblCenterMaster.CenterName,tblCenterMaster.GSTNo,$tbl.OrderStatus,tblproduct.ProductName,tblproduct.hsn_code,tblproduct.unit,tblproduct.PackingQty,tblclients.company,$tbl.PurchID,tblGstRecord.gstin");
+                    break;
+
+                default:
+                    $tbl = "tblK1purchasemaster";
+                    $tblJoin = "tblK1purchasemaster.Inv_No = tblK1history.TransID";
+                    $ttypeWhere = ['tblK1history.TType' => 'P', 'tblK1history.TType2' => 'Purchase', 'tblK1purchasemaster.Is_Ledger' => 'Y'];
+                    $this->db->select("tblK1history.*,$tbl.InvoiceNo,$tbl.Inv_No,tblCenterMaster.CenterName,tblCenterMaster.GSTNo,$tbl.OrderStatus,tblproduct.ProductName,tblproduct.hsn_code,tblproduct.unit,tblproduct.PackingQty,tblclients.company,$tbl.PurchID,tblGstRecord.gstin");
+                    break;
+            }
+
+            if (!is_admin()) {
+                $this->db->join("tblstaff_wise_center", "tblstaff_wise_center.CenterID = tblK1history.CenterID");
+                $this->db->where("tblstaff_wise_center.AccountID", $UserID);
+            }
+
+            $this->db->where("tblK1history.TransDate >=", $from_date . " 00:00:00");
+            $this->db->where("tblK1history.TransDate <=", $to_date . " 23:59:59");
+
+            if (!empty($data["order_status"]) && in_array($data["Entry_type"], [1, 2])) {
+                $this->db->where("$tbl.OrderStatus", $data["order_status"]);
+            }
+
+            if (!empty($data["AccountID"])) {
+                $this->db->where("$tbl.AccountID", $data["AccountID"]);
+            }
+
+            if (!empty($data["CenterID"])) {
+                $this->db->where("$tbl.CenterID", $data["CenterID"]);
+            }
+
+            if (!empty($data["ItemID"])) {
+                $this->db->where("tblK1history.ItemID", $data["ItemID"]);
+            }
+
+            $this->db->join("tblproduct", "tblproduct.ProductID = tblK1history.ItemID");
+            $this->db->join($tbl, $tblJoin);
+            $this->db->join("tblclients", "tblclients.AccountID = $tbl.AccountID");
+            $this->db->join("tblGstRecord", 'tblGstRecord.AccountID = tblclients.AccountID AND tblGstRecord.IsPrimary = "1"', "LEFT");
+            $this->db->join("tblCenterMaster", "tblCenterMaster.CenterID = $tbl.CenterID");
+            $this->db->where("$tbl.PurchID IS NOT NULL");
+            $this->db->where($ttypeWhere);
+            $this->db->order_by("$tbl.PurchID", "DESC");
+
+            return $this->db->get("tblK1history")->result_array();
+        }
+    }
+
     public function get_company_detail()
     {
         $selected_company = $this->session->userdata("root_company");

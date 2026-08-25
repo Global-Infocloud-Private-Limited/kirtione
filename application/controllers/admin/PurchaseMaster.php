@@ -2838,4 +2838,272 @@
 			die;
 		}
 	}
+
+	// Purchase List with Filter Invoice, Inward, Order and Items Wise
+	public function PurchaseList()
+	{
+		if (!has_permission_new('PurchOrderList', '', 'view')) {
+			access_denied('Invoice Items');
+		}
+		$data['centermaster'] = $this->PurchaseModel->GetAllAssignedCenterList();
+		$data['products'] = $this->PurchaseModel->GetPurchOrderItemList();
+		$data['clients'] = $this->PurchaseModel->GetPurchOrderPartyList();
+		$data['company_detail'] = $this->PurchaseModel->get_company_detail();
+		$this->load->view('admin/PurchaseMaster/PurchaseList',$data);
+	}
+
+	public function GetFilterPurchaseList()
+	{
+		$data = array(
+			'from_date' => $this->input->post('from_date'),
+			'to_date' => $this->input->post('to_date'),
+			'order_status'=> $this->input->post('order_status'),
+			'AccountID'=>$this->input->post('AccountID'),
+			'CenterID'=>$this->input->post('CenterID'),
+			'ItemID'=>$this->input->post('ItemID'),
+			'Report_type'=>$this->input->post('Report_type'),
+			'Entry_type'=>$this->input->post('Entry_type')
+		);
+
+		// $entryType = ['' => 'Invoice', '1' => 'Order', '2' => 'Inward'];
+		// $reportType = ['1' => 'Bill Wise', '2' => 'Item Wise'];
+		$Report_type = $this->input->post('Report_type');
+		switch($Report_type){
+			case '1':
+				$thead = '<tr>
+								<th style="text-align:left;">Sr No.</th>
+								<th style="text-align:left;">PO.No</th>
+								<th style="text-align:left;">PO Date</th>
+								<th style="text-align:left;">Vendor Doc. No.</th>
+								<th style="text-align:left;">Center Name</th> 
+								<th style="text-align:left;">Center GSTIN</th> 
+								<th style="text-align:left;">Party Name</th> 
+								<th style="text-align:left;">GSTIN</th> 
+								<th style="text-align:left;">Order Amt</th> 
+								<th style="text-align:left;">Disc Amt</th> 
+								<th style="text-align:left;">Taxable Amt</th>
+								<th style="text-align:left;">CGST Amt</th>
+								<th style="text-align:left;">SGST Amt</th>
+								<th style="text-align:left;">IGST Amt</th>
+								<th style="text-align:left;">Net Amt</th>
+								<th style="text-align:left;">Order Status</th>
+							</tr>';
+				break;
+			case '2':
+				$thead = '<tr>
+								<th style="text-align:left;">Sr No.</th>
+								<th style="text-align:left;">PO.No</th>
+								<th style="text-align:left;">PO Date</th>
+								<th style="text-align:left;">Vendor Doc. No.</th>
+								<th style="text-align:left;">Center Name</th>
+								<th style="text-align:left;">Center GSTIN</th> 
+								<th style="text-align:left;">Party Name</th>
+								<th style="text-align:left;">GSTIN</th> 
+								<th style="text-align:left;">Item Name</th>
+								<th style="text-align:left;">HSN Code</th>
+								<th style="text-align:left;">Unit</th>
+								<th style="text-align:left;">Quantity</th>
+								<th style="text-align:left;">Item Amt</th>
+								<th style="text-align:left;">Disc Amt</th>
+								<th style="text-align:left;">GST%</th>
+								<th style="text-align:left;">Taxable Amt</th>
+								<th style="text-align:left;">CGST Amt</th>
+								<th style="text-align:left;">SGST Amt</th>
+								<th style="text-align:left;">IGST Amt</th>
+								<th style="text-align:left;">Net Amt</th>
+								<th style="text-align:left;">Order Status</th>
+							</tr>';
+				break;
+		}
+
+		$result = $this->PurchaseModel->getFilterPurchaseList($data);
+		$itemDataFilter = $data;
+		$itemDataFilter["Report_type"] = '2';
+		$ItemData = $this->PurchaseModel->getFilterPurchaseList($itemDataFilter);
+		// echo json_encode($ItemData); die;
+		// echo json_encode($result); die;
+
+		$tbody = '';
+		$totalQtySum = 0;
+		$TotalOrderAmt = 0;
+		$TotalDiscAmt = 0;
+		$TotalTaxableAmt = 0;
+		$TotalCGSTAmt = 0;
+		$TotalSGSTAmt = 0;
+		$TotalIGSTAmt = 0;
+		$TotalNetAmt = 0;
+
+		$orderStatusList = [
+			'C' => 'Cancelled',
+			'F' => 'Completed',
+			'P' => 'Pending',
+			'A' => 'Approved',
+			'I' => 'In Progress'
+		];
+
+		foreach($result as $key=>$value)
+		{
+			$OrderStat = $orderStatusList[$value["OrderStatus"]];
+
+			switch($data['Entry_type']){
+				case '1':
+					$redirectUrl = base_url('admin/PurchaseMaster/Order/'.$value['PurchID']);
+					$value["UniqueNo"] = $value["PurchID"];
+					break;
+				case '2':
+					$redirectUrl = base_url('admin/PurchaseMaster/Inward/'.$value['Inv_No']);
+					$value["UniqueNo"] = $value["Inv_No"];
+					break;
+				default:
+					$redirectUrl = base_url('admin/PurchaseMaster/Invoice/'.$value['Inv_No']);
+					$value["UniqueNo"] = $value["Inv_No"];
+					break;
+			}
+
+			if($Report_type == "1"){
+				$ItemTotal = 0;
+				$ItemDiscAmt = 0;
+				$ItemGstAmt = 0;
+				$ItemNetTotal = 0;
+				$GSTIN = "";
+				$GSTPer = 0;$CGSTAmt = 0;$SGSTAmt = 0;$IGSTAmt = 0;$OrdTaxableAmt = 0;
+				foreach($ItemData as $key1=>$val2){
+					$itemMatchesPurchase = $data['Entry_type'] == '1'
+						? $value["PurchID"] == $val2["OrderID"]
+						: $value["Inv_No"] == $val2["TransID"];
+
+					if($itemMatchesPurchase){
+						$TaxableAmt = $val2["OrderAmt"] - $val2["DiscAmt"];
+						$GSTIN = $val2['gstin'];
+						$GSTPer = $val2['cgst'] + $val2['sgst'] + $val2['igst'];
+						$CGSTAmt += $val2['cgstamt'];
+						$SGSTAmt += $val2['sgstamt'];
+						$IGSTAmt += $val2['igstamt'];
+						$OrdTaxableAmt += $TaxableAmt;
+						$gstamt = $val2['cgstamt'] + $val2['sgstamt'] + $val2['igstamt'];
+						$ItemTotal += $val2["OrderAmt"];
+						$ItemDiscAmt += $val2["DiscAmt"];
+						$ItemGstAmt += $gstamt;
+						$ItemNetTotal += $val2["NetOrderAmt"];
+					}
+				}
+				$tbody .= '<tr onclick="window.open(\'' . $redirectUrl . '\', \'_blank\');">';
+				$tbody .= '<td>'.($key+1).'</td>';
+				$tbody .= '<td>'.$value["UniqueNo"].'</td>';
+				$tbody .= '<td>'._d(substr($value["Transdate"],0,10)).'</td>';
+				$tbody .= '<td>'.$value['InvoiceNo'].'</td>';
+				$tbody .= '<td>'.$value['CenterName'].'</td>';
+				$tbody .= '<td>'.$value['GSTNo'].'</td>';
+				$tbody .= '<td>' . $value['company'] . ' (' . $value["AccountID"] . ')</td>';
+				$tbody .= '<td>'.$GSTIN.'</td>';
+				$tbody .= '<td style="text-align:right;">' . number_format($ItemTotal, 2, '.', '') . '</td>';
+				$tbody .= '<td style="text-align:right;">' . number_format($ItemDiscAmt, 2, '.', '') . '</td>';
+				$tbody .= '<td style="text-align:right;">' . number_format($OrdTaxableAmt, 2, '.', '') . '</td>';
+				$tbody .= '<td style="text-align:right;">' . number_format($CGSTAmt, 2, '.', '') . '</td>';
+				$tbody .= '<td style="text-align:right;">' . number_format($SGSTAmt, 2, '.', '') . '</td>';
+				$tbody .= '<td style="text-align:right;">' . number_format($IGSTAmt, 2, '.', '') . '</td>';
+				$tbody .= '<td style="text-align:right;">' . number_format($ItemNetTotal, 2, '.', '') . '</td>';
+				$tbody .= '<td>'.$OrderStat.'</td>';
+				$tbody .= '</tr>';
+				$TotalOrderAmt += $ItemTotal;
+				$TotalDiscAmt += $ItemDiscAmt;
+				$TotalTaxableAmt += $OrdTaxableAmt;
+				$TotalCGSTAmt += $CGSTAmt;
+				$TotalSGSTAmt += $SGSTAmt;
+				$TotalIGSTAmt += $IGSTAmt;
+				$TotalNetAmt += $ItemNetTotal;
+			}elseif($Report_type =="2"){
+			    $GSTIN = $value['gstin'];
+				$tbody .= '<tr onclick="window.open(\'' . $redirectUrl . '\', \'_blank\');">';
+				$tbody .= '<td>'.($key+1).'</td>';
+				$tbody .= '<td>'.$value["UniqueNo"].'</td>';
+				$tbody .= '<td>'._d(substr($value["TransDate"],0,10)).'</td>';
+				$tbody .= '<td>'.$value['InvoiceNo'].'</td>';
+				$tbody .= '<td>'.$value['CenterName'].'</td>';
+				$tbody .= '<td>'.$value['GSTNo'].'</td>';
+				$tbody .= '<td>' . $value['company'] . ' (' . $value["AccountID"] . ')</td>';
+				$tbody .= '<td>'.$GSTIN.'</td>';
+				$tbody .= '<td>'.$value['ProductName'].'</td>';
+				$tbody .= '<td>'.$value['hsn_code'].'</td>';
+				$tbody .= '<td>'.$value['unit'].'</td>';
+
+				$gstamt = $value['cgstamt'] + $value['sgstamt'] + $value['igstamt'];
+				$GSTPer = ($value['cgst'] != 0.00) ? ($value['cgst'] + $value['sgst']) : $value['igst'];
+				$TaxableAmt = $value['OrderAmt'] - $value['DiscAmt'];
+
+				$tbody .= '<td style="text-align:right;">' . number_format($value['OrderQty'], 2, '.', '') . '</td>';
+				$totalQtySum += $value['OrderQty'];
+
+				$tbody .= '<td style="text-align:right;">' . number_format($value['OrderAmt'], 2, '.', '') . '</td>';
+				$tbody .= '<td style="text-align:right;">' . number_format($value['DiscAmt'], 2, '.', '') . '</td>';
+				$tbody .= '<td style="text-align:right;">' . number_format($GSTPer, 2, '.', '') . '</td>';
+				$tbody .= '<td style="text-align:right;">' . number_format($TaxableAmt, 2, '.', '') . '</td>';
+				$tbody .= '<td style="text-align:right;">' . number_format($value['cgstamt'], 2, '.', '') . '</td>';
+				$tbody .= '<td style="text-align:right;">' . number_format($value['sgstamt'], 2, '.', '') . '</td>';
+				$tbody .= '<td style="text-align:right;">' . number_format($value['igstamt'], 2, '.', '') . '</td>';
+				$tbody .= '<td style="text-align:right;">' . number_format($value['NetOrderAmt'], 2, '.', '') . '</td>';
+				$tbody .= '<td>'.$OrderStat.'</td>';
+				$tbody .= '</tr>';
+
+				$TotalOrderAmt += $value['OrderAmt'];
+				$TotalDiscAmt += $value['DiscAmt'];
+				$TotalTaxableAmt += $TaxableAmt;
+				$TotalCGSTAmt += $value['cgstamt'];
+				$TotalSGSTAmt += $value['sgstamt'];
+				$TotalIGSTAmt += $value['igstamt'];
+				$TotalNetAmt += $value['NetOrderAmt'];
+			}elseif($Report_type == "3"){
+			    $tbody .= '<tr>';
+			    $tbody .= '<td style="text-align:right;"></td>';
+			    $tbody .= '<td style="text-align:right;"></td>';
+			    $tbody .= '<td style="text-align:right;"></td>';
+			    $tbody .= '<td style="text-align:right;"></td>';
+			    $tbody .= '<td style="text-align:right;"></td>';
+			    $tbody .= '<td style="text-align:right;"></td>';
+			    $tbody .= '<td style="text-align:right;"></td>';
+			    $tbody .= '<td style="text-align:right;"></td>';
+			    $tbody .= '<td style="text-align:right;"></td>';
+			    $tbody .= '<td style="text-align:right;"></td>';
+			    $tbody .= '<td style="text-align:right;"></td>';
+			    $tbody .= '<td style="text-align:right;"></td>';
+			    $tbody .= '<tr>';
+			}
+		}
+		
+		
+
+		switch($Report_type){
+			case '1':
+				$tfoot = '<tr>
+								<td colspan="8" style="text-align:right;"><strong>Total</strong></td>
+								<td style="text-align:right;"><strong>' . number_format($TotalOrderAmt, 2, '.', '') . '</strong></td>
+								<td style="text-align:right;"><strong>' . number_format($TotalDiscAmt, 2, '.', '') . '</strong></td>
+								<td style="text-align:right;"><strong>' . number_format($TotalTaxableAmt, 2, '.', '') . '</strong></td>
+								<td style="text-align:right;"><strong>' . number_format($TotalCGSTAmt, 2, '.', '') . '</strong></td>
+								<td style="text-align:right;"><strong>' . number_format($TotalSGSTAmt, 2, '.', '') . '</strong></td>
+								<td style="text-align:right;"><strong>' . number_format($TotalIGSTAmt, 2, '.', '') . '</strong></td>
+								<td style="text-align:right;"><strong>' . number_format($TotalNetAmt, 2, '.', '') . '</strong></td>
+								<td></td>
+							</tr>';
+				break;
+			case '2':
+				$tfoot = '<tr>
+								<td colspan="11" style="text-align:right;"><strong>Total</strong></td>
+								<td style="text-align:right;"><strong>' . number_format($totalQtySum, 2, '.', '') . '</td>
+								<td style="text-align:right;"><strong>' . number_format($TotalOrderAmt, 2, '.', '') . '</strong></td>
+								<td style="text-align:right;"><strong>' . number_format($TotalDiscAmt, 2, '.', '') . '</strong></td>
+								<td></td>
+								<td style="text-align:right;"><strong>' . number_format($TotalTaxableAmt, 2, '.', '') . '</strong></td>
+								<td style="text-align:right;"><strong>' . number_format($TotalCGSTAmt, 2, '.', '') . '</strong></td>
+								<td style="text-align:right;"><strong>' . number_format($TotalSGSTAmt, 2, '.', '') . '</strong></td>
+								<td style="text-align:right;"><strong>' . number_format($TotalIGSTAmt, 2, '.', '') . '</strong></td>
+								<td style="text-align:right;"><strong>' . number_format($TotalNetAmt, 2, '.', '') . '</strong></td>
+								<td></td>
+							</tr>';
+				break;
+		}
+
+		$html = '<thead>'.$thead.'</thead><tbody>'.$tbody.'</tbody><tfoot>'.$tfoot.'</tfoot>';
+		echo $html;
+	}
 }

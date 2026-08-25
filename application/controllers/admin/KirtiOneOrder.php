@@ -2469,7 +2469,6 @@
 								*/
 								$sales = $this->db
 										->select("
-												LedgerID,
 												TransID,
 												BillID,
 												ItemID,
@@ -2555,7 +2554,6 @@
 														* UPDATE SALE BATCH
 														*/
 														$this->db
-																->where('LedgerID', $sale['LedgerID'])
 																->where('ItemID', $itemID)
 																->where('CenterID', $centerID)
 																->where('BatchNo', $oldBatch)
@@ -2572,7 +2570,6 @@
 														if ($this->db->affected_rows() > 0) {
 
 																$updated[] = [
-																		'LedgerID'      => $sale['LedgerID'],
 																		'ItemID'        => $itemID,
 																		'CenterID'      => $centerID,
 																		'OldBatch'      => $oldBatch,
