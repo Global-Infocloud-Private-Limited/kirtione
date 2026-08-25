@@ -2263,7 +2263,7 @@ class PurchaseModel extends App_Model
             $this->db->insert(db_prefix() . "accountledger", $ledger_debit);
             $ord_n++;
             //Debit to Tax Account
-            if ($cgstamt != 0.0 && $sgstamt != 0.0) {
+            if ($TotalCGSTAmt != 0.0 && $TotalSGSTAmt != 0.0) {
                 //CGST Tax Ledger Entry
                 $Cgst_Ledger_entry = [
                     "PlantID" => $PlantID,
@@ -2277,7 +2277,7 @@ class PurchaseModel extends App_Model
                     "CenterID" => $CenterID,
                     "EntryFor" => "2",
                     "TType" => "D",
-                    "Amount" => $data["total_cgst_amt"],
+                    "Amount" => $TotalCGSTAmt,
                     "Narration" => $narrations,
                     "PassedFrom" => "PURCHASE",
                     "OrdinalNo" => $ord_n,
@@ -2301,7 +2301,7 @@ class PurchaseModel extends App_Model
                     "CenterID" => $CenterID,
                     "EntryFor" => "2",
                     "TType" => "D",
-                    "Amount" => $data["total_sgst_amt"],
+                    "Amount" => $TotalSGSTAmt,
                     "Narration" => $narrations,
                     "PassedFrom" => "PURCHASE",
                     "OrdinalNo" => $ord_n,
@@ -2312,7 +2312,7 @@ class PurchaseModel extends App_Model
                     $Sgst_Ledger_entry
                 );
                 $ord_n++;
-            } elseif ($igstamt != 0.0) {
+            } elseif ($TotalIGSTAmt != 0.0) {
                 //Igst Ledger Entry
                 $Igst_Ledger_Entry = [
                     "PlantID" => $PlantID,
@@ -2326,7 +2326,7 @@ class PurchaseModel extends App_Model
                     "CenterID" => $CenterID,
                     "EntryFor" => "2",
                     "TType" => "D",
-                    "Amount" => $data["total_igst_amt"],
+                    "Amount" => $TotalIGSTAmt,
                     "Narration" => $narrations,
                     "PassedFrom" => "PURCHASE",
                     "OrdinalNo" => $ord_n,
@@ -2396,7 +2396,7 @@ class PurchaseModel extends App_Model
                 }
             }
             //Debit to Discount Ledger Entry
-            if ($discountAMT > 0) {
+            if ($TotalDISCAmt > 0) {
                 $disc_ledger_entry = [
                     "PlantID" => $PlantID,
                     "FY" => $FY,
@@ -2409,7 +2409,7 @@ class PurchaseModel extends App_Model
                     "CenterID" => $CenterID,
                     "EntryFor" => "2",
                     "TType" => "C",
-                    "Amount" => $discountAMT,
+                    "Amount" => $TotalDISCAmt,
                     "Narration" => $narrations,
                     "PassedFrom" => "PURCHASE",
                     "OrdinalNo" => $ord_n,
@@ -2422,7 +2422,7 @@ class PurchaseModel extends App_Model
                 $ord_n++;
             }
             //Debit to RoundAmt Ledger Entry
-            if ($roundoffamt >= 0) {
+            if ($roundOffAmt >= 0) {
                 $roundledgerentry_debit = [
                     "PlantID" => $PlantID,
                     "FY" => $FY,
@@ -2435,7 +2435,7 @@ class PurchaseModel extends App_Model
                     "CenterID" => $CenterID,
                     "EntryFor" => "2",
                     "TType" => "C",
-                    "Amount" => $roundoffamt,
+                    "Amount" => $roundOffAmt,
                     "Narration" => $narrations,
                     "PassedFrom" => "PURCHASE",
                     "OrdinalNo" => $ord_n,
@@ -2447,7 +2447,7 @@ class PurchaseModel extends App_Model
                 );
                 $ord_n++;
             } else {
-                $amt = abs($roundoffamt);
+                $amt = abs($roundOffAmt);
                 $roundledgerentry_credit = [
                     "PlantID" => $PlantID,
                     "FY" => $FY,
@@ -4388,7 +4388,7 @@ class PurchaseModel extends App_Model
             $this->db->insert(db_prefix() . "accountledger", $ledger_debit);
             $ord_n++;
             //Debit to Tax Account
-            if ($cgstamt != 0.0 && $sgstamt != 0.0) {
+            if ($TotalCGSTAmt != 0.0 && $TotalSGSTAmt != 0.0) {
                 //CGST Tax Ledger Entry
                 $Cgst_Ledger_entry = [
                     "PlantID" => $selected_company,
@@ -4402,7 +4402,7 @@ class PurchaseModel extends App_Model
                     "CenterID" => $CenterID,
                     "EntryFor" => "2",
                     "TType" => "D",
-                    "Amount" => $data["total_cgst_amt"],
+                    "Amount" => $TotalCGSTAmt,
                     "Narration" => $narrations,
                     "PassedFrom" => "PURCHASE",
                     "OrdinalNo" => $ord_n,
@@ -4426,7 +4426,7 @@ class PurchaseModel extends App_Model
                     "CenterID" => $CenterID,
                     "EntryFor" => "2",
                     "TType" => "D",
-                    "Amount" => $data["total_sgst_amt"],
+                    "Amount" => $TotalSGSTAmt,
                     "Narration" => $narrations,
                     "PassedFrom" => "PURCHASE",
                     "OrdinalNo" => $ord_n,
@@ -4437,7 +4437,7 @@ class PurchaseModel extends App_Model
                     $Sgst_Ledger_entry
                 );
                 $ord_n++;
-            } elseif ($igstamt != 0.0) {
+            } elseif ($TotalIGSTAmt != 0.0) {
                 //Igst Ledger Entry
                 $Igst_Ledger_Entry = [
                     "PlantID" => $selected_company,
@@ -4451,7 +4451,7 @@ class PurchaseModel extends App_Model
                     "CenterID" => $CenterID,
                     "EntryFor" => "2",
                     "TType" => "D",
-                    "Amount" => $data["total_igst_amt"],
+                    "Amount" => $TotalIGSTAmt,
                     "Narration" => $narrations,
                     "PassedFrom" => "PURCHASE",
                     "OrdinalNo" => $ord_n,
@@ -4521,7 +4521,7 @@ class PurchaseModel extends App_Model
                 }
             }
             //Debit to Discount Ledger Entry
-            if ($discountAMT > 0) {
+            if ($TotalDISCAmt > 0) {
                 $disc_ledger_entry = [
                     "PlantID" => $selected_company,
                     "FY" => $fy,
@@ -4534,7 +4534,7 @@ class PurchaseModel extends App_Model
                     "CenterID" => $CenterID,
                     "EntryFor" => "2",
                     "TType" => "C",
-                    "Amount" => $discountAMT,
+                    "Amount" => $TotalDISCAmt,
                     "Narration" => $narrations,
                     "PassedFrom" => "PURCHASE",
                     "OrdinalNo" => $ord_n,
@@ -4547,7 +4547,7 @@ class PurchaseModel extends App_Model
                 $ord_n++;
             }
             //Debit to RoundAmt Ledger Entry
-            if ($roundoffamt >= 0) {
+            if ($roundOffAmt >= 0) {
                 $roundledgerentry_debit = [
                     "PlantID" => $selected_company,
                     "FY" => $fy,
@@ -4560,7 +4560,7 @@ class PurchaseModel extends App_Model
                     "CenterID" => $CenterID,
                     "EntryFor" => "2",
                     "TType" => "C",
-                    "Amount" => $roundoffamt,
+                    "Amount" => $roundOffAmt,
                     "Narration" => $narrations,
                     "PassedFrom" => "PURCHASE",
                     "OrdinalNo" => $ord_n,
@@ -4572,7 +4572,7 @@ class PurchaseModel extends App_Model
                 );
                 $ord_n++;
             } else {
-                $amt = abs($roundoffamt);
+                $amt = abs($roundOffAmt);
                 $roundledgerentry_credit = [
                     "PlantID" => $selected_company,
                     "FY" => $fy,
