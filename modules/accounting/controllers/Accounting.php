@@ -6106,7 +6106,7 @@ class Accounting extends AdminController
     $is_reconciled = $this->input->post('is_reconciled');
     $selected_company = $this->session->userdata('root_company');
     $table_data = $this->accounting_model->get_voucher_data($filterdata);
-    //echo json_encode($table_data);
+    // echo json_encode($table_data);
     /* print_r($table_data);
         die;*/
     $data_for_pay_rec = $this->accounting_model->get_for_pay_rec($filterdata);
@@ -6152,11 +6152,16 @@ class Accounting extends AdminController
       $html .= '<th>Party Name</th>';
       $html .= '<th>PurchAmt</th>';
       $html .= '<th>Discount</th>';
-      $html .= '<th>Excise</th>';
-      $html .= '<th>CST</th>';
-      $html .= '<th>TaxAmt</th>';
-      $html .= '<th>Claim</th>';
-      $html .= '<th>Freight</th>';
+      // $html .= '<th>Excise</th>';
+      $html .= '<th>OtherAmt</th>';
+      // $html .= '<th>CST</th>';
+      $html .= '<th>IncAmt</th>';
+      $html .= '<th>TaxableAmt</th>';
+      // $html .= '<th>Claim</th>';
+      $html .= '<th>CGSTAmt</th>';
+      // $html .= '<th>Freight</th>';
+      $html .= '<th>SGSTAmt</th>';
+      $html .= '<th>IGSTAmt</th>';
       $html .= '<th>RoundOff</th>';
       $html .= '<th>InvoiceAmt</th>';
     } else if ($voucher_type == "SALE") {
@@ -6182,6 +6187,9 @@ class Accounting extends AdminController
     $freight_amt_total = 0.00;
     $round_off1 = 0.00;
     $InvAmt = 0.00;
+    $PExpAmt = 0;
+    $PIncAmt = 0;
+    $PCGST = $PSGST = $PIGST = $PROUNDOFF = $incomeAmt = $expenseAmt = 0;
     foreach ($table_data as $key => $value) {
       $tax_sale = 0.00;
       $html .= '<tr>';
@@ -6245,32 +6253,57 @@ class Accounting extends AdminController
         $html .= '<td>' . $value['Narration'] . '</td>';
         $html .= '<td>' . $value['address'] . '</td>';
       } else if ($voucher_type == "PURCHASE") {
-        $html .= '<td>' . $value['PurchID'] . '</td>';
+        $html .= '<td>' . $value['Inv_No'] . '</td>';
         $date = substr($value['Transdate'], 0, 10);
         $html .= '<td>' . _d($date) . '</td>';
         $html .= '<td>' . $value['Invoiceno'] . '</td>';
         $html .= '<td>' . $value['company'] . '</td>';
-        $html .= '<td style="text-align:right;">' . $value['Purchamt'] . '</td>';
-        $purch_amt_total = $purch_amt_total + $value['Purchamt'];
-        $html .= '<td style="text-align:right;">' . number_format($value['Discamt'], 2) . '</td>';
-        $DiscAmt = $DiscAmt + $value['Discamt'];
-        $html .= '<td style="text-align:right;">' . number_format($value['Excamt'], 2) . '</td>';
-        $html .= '<td style="text-align:right;">' . number_format($value['Cstamt'], 2) . '</td>';
-        if ($value['sgstamt'] != 0 || $value['cgstamt'] != 0) {
-          $tax = $value['sgstamt'] + $value['cgstamt'];
-        } else {
-          $tax = $value['igstamt'];
-        }
 
-        $html .= '<td style="text-align:right;">' . number_format($tax, 2) . '</td>';
-        $TaxAmt = $TaxAmt + $tax;
-        $html .= '<td></td>';
-        $html .= '<td style="text-align:right;">' . number_format($value['Frtamt'], 2) . '</td>';
-        $freight_amt_total = $freight_amt_total + $value['Frtamt'];
-        $html .= '<td style="text-align:right;">' . number_format($value['RoundOffAmt'], 2) . '</td>';
-        $round_off1 = $round_off1 + $value['RoundOffAmt'];
-        $html .= '<td style="text-align:right;">' . number_format($value['Invamt'], 2) . '</td>';
-        $InvAmt = $InvAmt + $value['Invamt'];
+        $FinalPurchAmt = 0;
+        $FinalDiscAmt = 0;
+        $FinalTaxableAmt = 0;
+        $CGSTAmt = 0;
+        $SGSTAmt = 0;
+        $IGSTAmt = 0;
+        $FinalRoundOff = 0;
+        $ItemNetTotal = 0;
+				foreach($value['history'] as $key1=>$val2){
+          $PurchAmt = ($val2["BilledQty"] / $val2["CaseQty"]) * $val2["PurchRate"];
+          $FinalPurchAmt += $PurchAmt;
+          $FinalDiscAmt += $val2["DiscAmt"];
+
+          $CGSTAmt += $val2['cgstamt'];
+          $SGSTAmt += $val2['sgstamt'];
+          $IGSTAmt += $val2['igstamt'];
+				}
+        $PExpAmt += $value['Expense'];
+        $PIncAmt += $value['Income'];
+
+        $TaxableAmt = $FinalPurchAmt + $value['Expense'] - $value['Income'] - $FinalDiscAmt;
+        
+        $NetAmt = $TaxableAmt + $CGSTAmt + $SGSTAmt + $IGSTAmt;
+        $ItemNetTotal = round($NetAmt);
+        $FinalRoundOff += $ItemNetTotal - $NetAmt;
+
+        $purch_amt_total += $FinalPurchAmt;
+        $DiscAmt += $FinalDiscAmt;
+        $TaxAmt += $TaxableAmt;
+        $PCGST += $CGSTAmt;
+        $PSGST += $SGSTAmt;
+        $PIGST += $IGSTAmt;
+        $PROUNDOFF += $FinalRoundOff;
+        $InvAmt += $ItemNetTotal;
+
+        $html .= '<td style="text-align:right;">'.number_format($FinalPurchAmt, 2).'</td>';
+        $html .= '<td style="text-align:right;">'.number_format($FinalDiscAmt, 2).'</td>';
+        $html .= '<td style="text-align:right;">'.number_format($value['Expense'], 2).'</td>';
+        $html .= '<td style="text-align:right;">'.number_format($value['Income'], 2).'</td>';
+        $html .= '<td style="text-align:right;">'.number_format($TaxableAmt, 2).'</td>';
+        $html .= '<td style="text-align:right;">'.number_format($CGSTAmt, 2).'</td>';
+        $html .= '<td style="text-align:right;">'.number_format($SGSTAmt, 2).'</td>';
+        $html .= '<td style="text-align:right;">'.number_format($IGSTAmt, 2).'</td>';
+        $html .= '<td style="text-align:right;">'.number_format($FinalRoundOff, 2).'</td>';
+        $html .= '<td style="text-align:right;">'.number_format($ItemNetTotal, 2).'</td>';
       } else if ($voucher_type == "SALE") {
         $html .= '<td>' . $value['SalesID'] . '</td>';
         $date = substr($value['Transdate'], 0, 10);
@@ -6330,12 +6363,13 @@ class Accounting extends AdminController
       $html .= '<td style="color:red;"><b>Total</b></td>';
       $html .= '<td style="color:red;text-align:right;"><b>' . number_format($purch_amt_total, 2) . '</b></td>';
       $html .= '<td style="color:red;text-align:right;"><b>' . number_format($DiscAmt, 2) . '</b></td>';
-      $html .= '<td></td>';
-      $html .= '<td></td>';
+      $html .= '<td style="color:red;text-align:right;"><b>' . number_format($PExpAmt, 2) . '</b></td>';
+      $html .= '<td style="color:red;text-align:right;"><b>' . number_format($PIncAmt, 2) . '</b></td>';
       $html .= '<td style="color:red;text-align:right;"><b>' . number_format($TaxAmt, 2) . '</b></td>';
-      $html .= '<td></td>';
-      $html .= '<td style="color:red;text-align:right;"><b>' . number_format($freight_amt_total, 2) . '</b></td>';
-      $html .= '<td style="color:red;text-align:right;"><b>' . number_format($round_off1, 2) . '</b></td>';
+      $html .= '<td style="color:red;text-align:right;"><b>' . number_format($PCGST, 2) . '</b></td>';
+      $html .= '<td style="color:red;text-align:right;"><b>' . number_format($PSGST, 2) . '</b></td>';
+      $html .= '<td style="color:red;text-align:right;"><b>' . number_format($PIGST, 2) . '</b></td>';
+      $html .= '<td style="color:red;text-align:right;"><b>' . number_format($PROUNDOFF, 2) . '</b></td>';
       $html .= '<td style="color:red;text-align:right;"><b>' . number_format($InvAmt, 2) . '</b></td>';
     } else if ($voucher_type == "SALE") {
       $html .= '<td></td>';

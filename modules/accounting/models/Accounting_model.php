@@ -17377,30 +17377,38 @@ class Accounting_model extends App_Model
         $is_reconciled_filter = !empty($is_reconciled) ? ("AND tblaccountledger.reconcile_status = '".$is_reconciled."'") : '';
         if($voucher_type == "CONTRA" || $voucher_type == "JOURNAL"){
         $sql = 'SELECT tblaccountledger.*,tblclients.company,tblclients.address,tblstaff.firstname,tblstaff.lastname  FROM `tblaccountledger`
-        LEFT JOIN tblclients ON tblclients.AccountID=tblaccountledger.AccountID AND tblclients.PlantID = tblaccountledger.PlantID
-        LEFT JOIN tblstaff ON tblstaff.AccountID=tblaccountledger.AccountID AND tblstaff.PlantID = '.$selected_company.'
-        WHERE tblaccountledger.PlantID = '.$selected_company.' AND tblaccountledger.FY = "'.$fy.'" '.$is_reconciled_filter.' AND tblaccountledger.Transdate BETWEEN "'.$from_date.' 00:00:00" AND "'.$to_date.' 23:59:59" AND tblaccountledger.PassedFrom = "'.$voucher_type.'"';
-        $sql .= ' ORDER BY ABS(tblaccountledger.VoucherID),tblaccountledger.OrdinalNo ASC';
-        //$sql .= ' GROUP BY tblhistory.ItemID,tblhistory.TType,tblhistory.TType2';
+			LEFT JOIN tblclients ON tblclients.AccountID=tblaccountledger.AccountID AND tblclients.PlantID = tblaccountledger.PlantID
+			LEFT JOIN tblstaff ON tblstaff.AccountID=tblaccountledger.AccountID AND tblstaff.PlantID = '.$selected_company.'
+			WHERE tblaccountledger.PlantID = '.$selected_company.' AND tblaccountledger.FY = "'.$fy.'" '.$is_reconciled_filter.' AND tblaccountledger.Transdate BETWEEN "'.$from_date.' 00:00:00" AND "'.$to_date.' 23:59:59" AND tblaccountledger.PassedFrom = "'.$voucher_type.'"';
+			$sql .= ' ORDER BY ABS(tblaccountledger.VoucherID),tblaccountledger.OrdinalNo ASC';
+			//$sql .= ' GROUP BY tblhistory.ItemID,tblhistory.TType,tblhistory.TType2';
         }else if($voucher_type == "PAYMENTS" || $voucher_type == "RECEIPTS"){
-        $sql = 'SELECT tblaccountledger.*,tblclients.company,tblclients.address,tblstaff.firstname,tblstaff.lastname  FROM `tblaccountledger`
-        LEFT JOIN tblclients ON tblclients.AccountID=tblaccountledger.AccountID AND tblclients.PlantID = tblaccountledger.PlantID
-        LEFT JOIN tblstaff ON tblstaff.AccountID=tblaccountledger.AccountID AND tblstaff.PlantID = '.$selected_company.'
-        WHERE tblaccountledger.PlantID = '.$selected_company.' AND tblaccountledger.FY = "'.$fy.'" '.$is_reconciled_filter.' AND tblaccountledger.Transdate BETWEEN "'.$from_date.' 00:00:00" AND "'.$to_date.' 23:59:59" AND tblaccountledger.PassedFrom = "'.$voucher_type.'" AND tblaccountledger.TType = "C"';
-        $sql .= ' ORDER BY ABS(tblaccountledger.VoucherID) ,tblaccountledger.OrdinalNo ASC';
+			$sql = 'SELECT tblaccountledger.*,tblclients.company,tblclients.address,tblstaff.firstname,tblstaff.lastname  FROM `tblaccountledger`
+			LEFT JOIN tblclients ON tblclients.AccountID=tblaccountledger.AccountID AND tblclients.PlantID = tblaccountledger.PlantID
+			LEFT JOIN tblstaff ON tblstaff.AccountID=tblaccountledger.AccountID AND tblstaff.PlantID = '.$selected_company.'
+			WHERE tblaccountledger.PlantID = '.$selected_company.' AND tblaccountledger.FY = "'.$fy.'" '.$is_reconciled_filter.' AND tblaccountledger.Transdate BETWEEN "'.$from_date.' 00:00:00" AND "'.$to_date.' 23:59:59" AND tblaccountledger.PassedFrom = "'.$voucher_type.'" AND tblaccountledger.TType = "C"';
+			$sql .= ' ORDER BY ABS(tblaccountledger.VoucherID) ,tblaccountledger.OrdinalNo ASC';
         }else if($voucher_type == "PURCHASE"){
-        $sql = 'SELECT tblpurchasemaster.*,tblclients.company,tblclients.address  FROM `tblpurchasemaster`
-        INNER JOIN tblclients ON tblclients.AccountID=tblpurchasemaster.AccountID AND tblclients.PlantID = tblpurchasemaster.PlantID
-        WHERE tblpurchasemaster.PlantID = '.$selected_company.' AND tblpurchasemaster.FY = "'.$fy.'" AND tblpurchasemaster.Transdate BETWEEN "'.$from_date.' 00:00:00" AND "'.$to_date.' 23:59:59"';
-        $sql .= ' ORDER BY tblpurchasemaster.PurchID ASC';
+			$sql = 'SELECT tblK1purchasemaster.*,tblclients.company,tblclients.address  FROM `tblK1purchasemaster`
+			INNER JOIN tblclients ON tblclients.AccountID=tblK1purchasemaster.AccountID AND tblclients.PlantID = tblK1purchasemaster.PlantID
+			WHERE tblK1purchasemaster.PlantID = '.$selected_company.' AND tblK1purchasemaster.Is_Ledger="Y" AND tblK1purchasemaster.FY = "'.$fy.'" AND tblK1purchasemaster.Transdate BETWEEN "'.$from_date.' 00:00:00" AND "'.$to_date.' 23:59:59"';
+			$sql .= ' ORDER BY tblK1purchasemaster.PurchID ASC';
         }else if($voucher_type == "SALE"){
-        $sql = 'SELECT tblsalesmaster.*,tblclients.company,tblclients.address  FROM `tblsalesmaster`
-        INNER JOIN tblclients ON tblclients.AccountID=tblsalesmaster.AccountID AND tblclients.PlantID = tblsalesmaster.PlantID
-        WHERE tblsalesmaster.PlantID = '.$selected_company.' AND tblsalesmaster.FY = "'.$fy.'" AND tblsalesmaster.Transdate BETWEEN "'.$from_date.' 00:00:00" AND "'.$to_date.' 23:59:59"';
-        $sql .= ' ORDER BY tblsalesmaster.Transdate ASC';
+			$sql = 'SELECT tblsalesmaster.*,tblclients.company,tblclients.address  FROM `tblsalesmaster`
+			INNER JOIN tblclients ON tblclients.AccountID=tblsalesmaster.AccountID AND tblclients.PlantID = tblsalesmaster.PlantID
+			WHERE tblsalesmaster.PlantID = '.$selected_company.' AND tblsalesmaster.FY = "'.$fy.'" AND tblsalesmaster.Transdate BETWEEN "'.$from_date.' 00:00:00" AND "'.$to_date.' 23:59:59"';
+			$sql .= ' ORDER BY tblsalesmaster.Transdate ASC';
         }
 
         $result = $this->db->query($sql)->result_array();
+
+		if($voucher_type == "PURCHASE"){
+			foreach($result as $key => $value){
+				$result[$key]["history"] = $this->db->select('*')->from('tblK1history')->where(['TransID' => $value['Inv_No']])->get()->result_array();
+				$result[$key]["Expense"] = $this->db->select('SUM(Amount) as SUMExp')->from('tblK1PurchaseMasterExpenses')->where(['Inv_No' => $value['Inv_No'], "LedgerCategory" => 'Direct Expense'])->get()->row()->SUMExp ?? 0;
+				$result[$key]["Income"] = $this->db->select('SUM(Amount) as SUMExp')->from('tblK1PurchaseMasterExpenses')->where(['Inv_No' => $value['Inv_No'], "LedgerCategory" => 'Direct Income'])->get()->row()->SUMInc ?? 0;
+			}
+		}
         return $result;
     }
 

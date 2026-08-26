@@ -9,6 +9,10 @@
 			$this->load->model('PurchaseModel');
 			$this->load->model('KirtiOneOrderModel');
 		}
+		public function PurchaseLedgerCorrection()
+		{
+		    $id = $this->PurchaseModel->PurchaseLedgerCorrection();
+		}
 		public function AddEditPurchaseRequest($PRNumber = '')
 		{
 			if (!has_permission_new('PurchaseRequest', '', 'view')) {
