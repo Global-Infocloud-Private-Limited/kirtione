@@ -2977,18 +2977,19 @@
 						: $value["Inv_No"] == $val2["TransID"];
 
 					if($itemMatchesPurchase){
-						$TaxableAmt = $val2["OrderAmt"] - $val2["DiscAmt"];
+						$TaxableAmt = (($val2["BilledQty"] / $val2["CaseQty"]) * $val2["PurchRate"]) - $val2["DiscAmt"];
 						$GSTIN = $val2['gstin'];
-						$GSTPer = $val2['cgst'] + $val2['sgst'] + $val2['igst'];
+						$GSTPer = ($val2['cgst'] != 0.00) ? ($val2['cgst'] + $val2['sgst']) : $val2['igst'];
 						$CGSTAmt += $val2['cgstamt'];
 						$SGSTAmt += $val2['sgstamt'];
 						$IGSTAmt += $val2['igstamt'];
 						$OrdTaxableAmt += $TaxableAmt;
-						$gstamt = $val2['cgstamt'] + $val2['sgstamt'] + $val2['igstamt'];
-						$ItemTotal += $val2["OrderAmt"];
+						$gstamt = ($val2['cgstamt'] != 0.00) ? ($val2['cgstamt'] + $val2['sgstamt']) : $val2['igstamt'];
+						$ItemTotal += ($val2["BilledQty"] / $val2["CaseQty"]) * $val2["PurchRate"];
 						$ItemDiscAmt += $val2["DiscAmt"];
 						$ItemGstAmt += $gstamt;
-						$ItemNetTotal += $val2["NetOrderAmt"];
+						// $ItemNetTotal += $val2["NetOrderAmt"];
+						$ItemNetTotal += ($TaxableAmt + $gstamt);
 					}
 				}
 				$tbody .= '<tr onclick="window.open(\'' . $redirectUrl . '\', \'_blank\');">';
@@ -3031,31 +3032,35 @@
 				$tbody .= '<td>'.$value['hsn_code'].'</td>';
 				$tbody .= '<td>'.$value['unit'].'</td>';
 
-				$gstamt = $value['cgstamt'] + $value['sgstamt'] + $value['igstamt'];
+				$gstamt = ($value['cgstamt'] != 0.00) ? ($value['cgstamt'] + $value['sgstamt']) : $value['igstamt'];
 				$GSTPer = ($value['cgst'] != 0.00) ? ($value['cgst'] + $value['sgst']) : $value['igst'];
-				$TaxableAmt = $value['OrderAmt'] - $value['DiscAmt'];
+				// $TaxableAmt = $value['OrderAmt'] - $value['DiscAmt'];
+				$itemAmt = ($value['BilledQty'] / $value['CaseQty']) * $value['PurchRate'];
+				$TaxableAmt = (($value["BilledQty"] / $value["CaseQty"]) * $value["PurchRate"]) - $value["DiscAmt"];
+				$orderQty = ($value["BilledQty"] / $value["CaseQty"]);
+				$tbody .= '<td style="text-align:right;">' . number_format($orderQty, 2, '.', '') . '</td>';
+				// $totalQtySum += $value['OrderQty'];
+				$orderAmt = ($TaxableAmt + $gstamt);
+				$totalQtySum += $orderQty;
 
-				$tbody .= '<td style="text-align:right;">' . number_format($value['OrderQty'], 2, '.', '') . '</td>';
-				$totalQtySum += $value['OrderQty'];
-
-				$tbody .= '<td style="text-align:right;">' . number_format($value['OrderAmt'], 2, '.', '') . '</td>';
+				$tbody .= '<td style="text-align:right;">' . number_format($itemAmt, 2, '.', '') . '</td>';
 				$tbody .= '<td style="text-align:right;">' . number_format($value['DiscAmt'], 2, '.', '') . '</td>';
 				$tbody .= '<td style="text-align:right;">' . number_format($GSTPer, 2, '.', '') . '</td>';
 				$tbody .= '<td style="text-align:right;">' . number_format($TaxableAmt, 2, '.', '') . '</td>';
 				$tbody .= '<td style="text-align:right;">' . number_format($value['cgstamt'], 2, '.', '') . '</td>';
 				$tbody .= '<td style="text-align:right;">' . number_format($value['sgstamt'], 2, '.', '') . '</td>';
 				$tbody .= '<td style="text-align:right;">' . number_format($value['igstamt'], 2, '.', '') . '</td>';
-				$tbody .= '<td style="text-align:right;">' . number_format($value['NetOrderAmt'], 2, '.', '') . '</td>';
+				$tbody .= '<td style="text-align:right;">' . number_format($orderAmt, 2, '.', '') . '</td>';
 				$tbody .= '<td>'.$OrderStat.'</td>';
 				$tbody .= '</tr>';
 
-				$TotalOrderAmt += $value['OrderAmt'];
+				$TotalOrderAmt += $itemAmt;
 				$TotalDiscAmt += $value['DiscAmt'];
 				$TotalTaxableAmt += $TaxableAmt;
 				$TotalCGSTAmt += $value['cgstamt'];
 				$TotalSGSTAmt += $value['sgstamt'];
 				$TotalIGSTAmt += $value['igstamt'];
-				$TotalNetAmt += $value['NetOrderAmt'];
+				$TotalNetAmt += $orderAmt;
 			}elseif($Report_type == "3"){
 			    $tbody .= '<tr>';
 			    $tbody .= '<td style="text-align:right;"></td>';

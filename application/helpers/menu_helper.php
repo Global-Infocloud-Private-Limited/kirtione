@@ -821,7 +821,8 @@ function app_init_admin_sidebar_menu_items()
         $CI->app_menu->add_sidebar_children_item('Kirti1Purchase', [
                 'slug'     => 'PurchaseOrderList',
                 'name'     => 'Purchase List',
-                'href'     => admin_url('PurchaseMaster/PurchaseOrderList'),
+                'href'     => admin_url('PurchaseMaster/PurchaseList'),
+                // 'href'     => admin_url('PurchaseMaster/PurchaseOrderList'),
                 'position' => 5,
         ]);
     }
