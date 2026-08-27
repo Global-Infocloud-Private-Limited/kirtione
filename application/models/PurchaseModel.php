@@ -1045,8 +1045,7 @@ class PurchaseModel extends App_Model
     }
 
     //=================== Add Kirti One Purchase Inward =============================
-    public function CreatePurchaseInward($data)
-    {
+    public function CreatePurchaseInward($data){
         if (isset($data["pur_order_detail"])) {
             $pur_order_detail = json_decode($data["pur_order_detail"]);
             unset($data["pur_order_detail"]);
@@ -1126,7 +1125,9 @@ class PurchaseModel extends App_Model
         $invoiceamt     = $data["netpayableamt"] + ($data["OtherAmt"] ?? 0);
         $EwayBill       = $data["ewaybillno"];
         $VehicleNo      = $data["VehicleNo"];
-        $InvoiceNo      = $data["InvoiceNo"];
+        $InvoiceNo      = $data["InvoiceNo"] ?? '';
+        $DeliveryChallanNo = $data["DeliveryChallanNo"];
+        $DeliveryChallanNoDate = to_sql_date($data["DeliveryChallanNoDate"]) . " 00:00:00";
         $OtherAmt       = $data["OtherAmt"] ?? 0;
         $OthEffectOn    = $data["OthEffectOn"] ?? null;
         $total_tcs_amt  = $data["total_tcs_amt"];
@@ -1168,7 +1169,9 @@ class PurchaseModel extends App_Model
             "Inv_date"      => $Transdate,
             "EwayBillNo"    => $EwayBill,
             "VehicleNo"     => $VehicleNo,
-            "InvoiceNo"     => $InvoiceNo,
+            // "InvoiceNo"     => $InvoiceNo,
+            "DeliveryChallanNo" => $DeliveryChallanNo,
+            "DeliveryChallanNoDate" => $DeliveryChallanNoDate,
             "Transdate"     => $Transdate,
             "OrderStatus"   => "P",
             "PartyID"       => "KASPL",
@@ -2154,8 +2157,7 @@ class PurchaseModel extends App_Model
             return true;
         }
     }
-    public function CreateInvoiceLedger($data)
-    {
+    public function CreateInvoiceLedger($data){
         if (isset($data["pur_order_detail"])) {
             $pur_order_detail = json_decode($data["pur_order_detail"]);
             unset($data["pur_order_detail"]);
@@ -2190,6 +2192,7 @@ class PurchaseModel extends App_Model
         $FY = $this->session->userdata("finacial_year");
         $VendorID       = $data["vendor"];
         $VendorDocNo    = $data["VendorDocNo"];
+        $InvoiceNoDate = to_sql_date($data["InvoiceNoDate"]) . " 00:00:00";
         $Inv_No         = $data["PurchID"];
         $State          = $data["state"];
         // $CenterState = $data["state"];
@@ -2318,6 +2321,7 @@ class PurchaseModel extends App_Model
             "Is_Ledger" => "Y",
             "OrderStatus" => "F",
             "InvoiceNo" => $VendorDocNo,
+            "InvoiceNoDate" => $InvoiceNoDate,
             "PaymentNo" => $PaymentNo,
             "PurchaseType" => $PurchaseType,
             "PaymentMode" => $PaymentMode,
@@ -3716,8 +3720,7 @@ class PurchaseModel extends App_Model
         return true;
     }
     
-    public function UpdatePurchaseInward($data, $id)
-    {
+    public function UpdatePurchaseInward($data, $id){
         $selected_company = $this->session->userdata("root_company");
         $fy = $this->session->userdata("finacial_year");
         if (isset($data["pur_order_detail"])) {
@@ -3769,7 +3772,9 @@ class PurchaseModel extends App_Model
         $invoiceamt     = $data["netpayableamt"] + ($data["OtherAmt"] ?? 0);
         $EwayBill       = $data["ewaybillno"];
         $VehicleNo      = $data["VehicleNo"];
-        $InvoiceNo      = $data["InvoiceNo"];
+        $InvoiceNo      = $data["InvoiceNo"] ?? '';
+        $DeliveryChallanNo = $data["DeliveryChallanNo"];
+        $DeliveryChallanNoDate = to_sql_date($data["DeliveryChallanNoDate"]) . " 00:00:00";
         $OtherAmt       = $data["OtherAmt"];
         $OthEffectOn    = $data["OthEffectOn"];
         $total_tcs_amt  = $data["total_tcs_amt"];
@@ -3787,7 +3792,9 @@ class PurchaseModel extends App_Model
             "Inv_date"      => $new_date,
             "EwayBillNo"    => $EwayBill,
             "VehicleNo"     => $VehicleNo,
-            "InvoiceNo"     => $InvoiceNo,
+            // "InvoiceNo"     => $InvoiceNo,
+            "DeliveryChallanNo" => $DeliveryChallanNo,
+            "DeliveryChallanNoDate" => $DeliveryChallanNoDate,
             "Purchamt"      => $PurchAmt,
             "Discamt"       => $discountAMT,
             "cgstamt"       => $cgstamt,
@@ -4177,8 +4184,7 @@ class PurchaseModel extends App_Model
         return true;
     }
     
-    public function UpdateInvoiceLedger($data, $id)
-    {
+    public function UpdateInvoiceLedger($data, $id){
         $selected_company = $this->session->userdata("root_company");
         $fy = $this->session->userdata("finacial_year");
         if (isset($data["pur_order_detail"])) {
@@ -4213,6 +4219,7 @@ class PurchaseModel extends App_Model
         $Inv_No         = $id;
         $VendorID       = $data["vendor"];
         $VendorDocNo    = $data["VendorDocNo"];
+        $InvoiceNoDate = to_sql_date($data["InvoiceNoDate"]) . " 00:00:00";
         $State          = $data["state"];
         $PurchaseType   = $data["purchasetype"];
         $PaymentMode    = $data["paymode"];
@@ -4354,6 +4361,7 @@ class PurchaseModel extends App_Model
             "Is_Ledger" => "Y",
             "OrderStatus" => "F",
             "InvoiceNo" => $VendorDocNo,
+            "InvoiceNoDate" => $InvoiceNoDate,
             "PaymentNo" => $PaymentNo,
             "PurchaseType" => $PurchaseType,
             "PaymentMode" => $PaymentMode,
@@ -7498,6 +7506,26 @@ class PurchaseModel extends App_Model
         $Data = $this->db->get()->row();
         return $Data;
     }
+
+    public function CheckDeliveryChallanNo($InvoiceID, $PurchInvoiceID)
+    {
+        $this->db->select("tblK1purchasemaster.*");
+        $this->db->from(db_prefix() . "K1purchasemaster");
+        $this->db->where(
+            db_prefix() . "K1purchasemaster.DeliveryChallanNo",
+            $InvoiceID
+        );
+
+        if ($PurchInvoiceID) {
+            $this->db->where(
+                db_prefix() . "K1purchasemaster.Inv_No !=",
+                $PurchInvoiceID
+            );
+        }
+        $Data = $this->db->get()->row();
+        return $Data;
+    }
+
     public function GetVendorWiseItems($PartyID)
     {
         /*$this->db->select('ProductID as id, CONCAT(ProductID," - ",ProductName) as label,ProductName ,ProductID');

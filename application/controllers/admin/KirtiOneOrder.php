@@ -953,9 +953,10 @@
 					$id = $this->KirtiOneOrderModel->AddKirtiOneNewSaleOrder($sale_order_data);
 					if ($id) {
 						set_alert('success', _l('added_successfully', _l('pur_order')));
-						redirect(admin_url('KirtiOneOrder/AddEditNewSaleOrder/').$id);
+						redirect(admin_url('KirtiOneOrder/AddEditNewSaleOrder'));
+						// redirect(admin_url('KirtiOneOrder/AddEditNewSaleOrder/').$id);
 					}
-					}else{
+				}else{
 					if (!has_permission_new('SaleOrder', '', 'edit')) {
 						access_denied('SaleOrder');
 					}				

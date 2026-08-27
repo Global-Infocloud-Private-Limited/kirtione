@@ -828,6 +828,13 @@
 			$purchase_list = $this->PurchaseModel->CheckVendorDocNo($InvoiceID,$PurchID,$PurchInvoiceID);
 			echo json_encode($purchase_list);
 		}
+		public function CheckDeliveryChallanNo()
+		{
+			$InvoiceID = $this->input->post('DeliveryChallanNo');
+			$PurchInvoiceID = $this->input->post('PurchInvoiceID');
+			$purchase_list = $this->PurchaseModel->CheckDeliveryChallanNo($InvoiceID,$PurchID,$PurchInvoiceID);
+			echo json_encode($purchase_list);
+		}
 		public function load_data_for_purchase()
 		{
 		    $data = array(
