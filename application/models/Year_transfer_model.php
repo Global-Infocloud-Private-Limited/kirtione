@@ -85,60 +85,121 @@ class Year_transfer_model extends App_Model
         $trf_crates = $data["trf_crates"];
         
         $this->db->select( db_prefix() . 'accountgroups.*,'.db_prefix() . 'accountgroupssub.*,'.db_prefix() . 'clients.AccountID');
-        $this->db->join(db_prefix() . 'accountgroupssub', db_prefix() . 'accountgroups.ActGroupID = '.db_prefix() . 'accountgroupssub.ActGroupID ');
-        $this->db->join(db_prefix() . 'clients', db_prefix() . 'accountgroupssub.SubActGroupID = '.db_prefix() . 'clients.SubActGroupID AND '.db_prefix() . 'clients.PlantID = '.$selected_company);
+        $this->db->join(db_prefix() . 'accountgroupssub1', db_prefix() . 'accountgroupssub1.ActGroupID = '.db_prefix() . 'accountgroups.ActGroupID');
+        $this->db->join(db_prefix() . 'accountgroupssub', db_prefix() . 'accountgroupssub.SubActGroupID1 = '.db_prefix() . 'accountgroupssub1.SubActGroupID1');
+        $this->db->join(db_prefix() . 'clients', db_prefix() . 'accountgroupssub.SubActGroupID = '.db_prefix() . 'clients.SubActGroupID 
+        AND '.db_prefix() . 'clients.PlantID = '.$selected_company);
         $this->db->where(db_prefix() . 'accountgroups.ActGroupMovementID !=', 'B');
         $this->db->order_by('ActGroupName', 'asc');
         $TransferGroup = $this->db->get(db_prefix() . 'accountgroups')->result_array();
+        /*echo "<pre>";
+        print_r($TransferGroup);
+        die;*/
         $NBal_trf_AccountID = array();
         foreach ($TransferGroup as $key11 => $value11) {
             array_push($NBal_trf_AccountID, trim(strtoupper($value11['AccountID'])));
         }
+        $AccountList = array();
         
         // From Account List Balances
         $this->db->select( db_prefix() . 'accountbalances.*');
         $this->db->where(db_prefix() . 'accountbalances.PlantID', $selected_company);
         $this->db->where(db_prefix() . 'accountbalances.FY', $trf_from);
+        $this->db->where(db_prefix() . 'accountbalances.PartyID', "KASPL");
         $this->db->order_by('AccountID', 'asc');
         $AccountList_From = $this->db->get(db_prefix() . 'accountbalances')->result_array();
-        
+        // Add Accounts In List
+        foreach($AccountList_From as $val){
+            array_push($AccountList,$val["AccountID"]);
+        }
         // To Account List Balances
         $this->db->select( db_prefix() . 'accountbalances.*');
         $this->db->where(db_prefix() . 'accountbalances.PlantID', $selected_company);
         $this->db->where(db_prefix() . 'accountbalances.FY', $trf_to);
+        $this->db->where(db_prefix() . 'accountbalances.PartyID', "KASPL");
         $this->db->order_by('AccountID', 'asc');
         $AccountList_To = $this->db->get(db_prefix() . 'accountbalances')->result_array();
-        
+        // Add Accounts In List
+        foreach($AccountList_To as $val){
+            array_push($AccountList,$val["AccountID"]);
+        }
         // FROM Accounts Credit Balance 
             $trf_from_new = $trf_from + 1;
             $from_date = '20'.$trf_from.'-04-01';
             $to_date = '20'.$trf_from_new.'-03-31';
             
-            // credit balance SUM
-                $this->db->select('sum(Amount) as credit_bal,AccountID');
-                $this->db->where('tblaccountledger.PlantID', $selected_company);
-                $this->db->LIKE('tblaccountledger.TType', 'C');
-                $this->db->LIKE('tblaccountledger.FY', $trf_from);
-                $this->db->where('tblaccountledger.Transdate BETWEEN "'.$from_date.' 00:00:00" AND "'.$to_date.' 23:59:59"');
-                $this->db->group_by('AccountID');
-                $credit_bal = $this->db->get('tblaccountledger')->result_array();
-        
+        // credit balance SUM
+            $this->db->select('sum(Amount) as credit_bal,AccountID');
+            $this->db->where('tblaccountledger.PlantID', $selected_company);
+            $this->db->LIKE('tblaccountledger.TType', 'C');
+            $this->db->LIKE('tblaccountledger.FY', $trf_from);
+            $this->db->where('tblaccountledger.PartyID', "KASPL");
+            $this->db->where('tblaccountledger.Transdate BETWEEN "'.$from_date.' 00:00:00" AND "'.$to_date.' 23:59:59"');
+            $this->db->group_by('AccountID');
+            $credit_bal = $this->db->get('tblaccountledger')->result_array();
+            // Add Accounts In List
+            foreach($credit_bal as $val){
+                array_push($AccountList,$val["AccountID"]);
+            }
         // FROM Accounts Debit Balance 
             
-            // Debit balance SUM
-                $this->db->select('sum(Amount) as debit_bal,AccountID');
-                $this->db->where('tblaccountledger.PlantID', $selected_company);
-                $this->db->LIKE('tblaccountledger.TType', 'D');
-                $this->db->LIKE('tblaccountledger.FY', $trf_from);
-                $this->db->where('tblaccountledger.Transdate BETWEEN "'.$from_date.' 00:00:00" AND "'.$to_date.' 23:59:59"');
-                $this->db->group_by('AccountID');
-                $debit_bal = $this->db->get('tblaccountledger')->result_array();
-        
-            
-        foreach ($AccountList_From as $key1 => $value1) {
+        // Debit balance SUM
+            $this->db->select('sum(Amount) as debit_bal,AccountID');
+            $this->db->where('tblaccountledger.PlantID', $selected_company);
+            $this->db->LIKE('tblaccountledger.TType', 'D');
+            $this->db->LIKE('tblaccountledger.FY', $trf_from);
+            $this->db->where('tblaccountledger.PartyID', "KASPL");
+            $this->db->where('tblaccountledger.Transdate BETWEEN "'.$from_date.' 00:00:00" AND "'.$to_date.' 23:59:59"');
+            $this->db->group_by('AccountID');
+            $debit_bal = $this->db->get('tblaccountledger')->result_array();
+            // Add Accounts In List
+            foreach($debit_bal as $val){
+                array_push($AccountList,$val["AccountID"]);
+            }
+        /*echo "<pre>";
+        print_r($AccountList);
+        die;*/
+        foreach ($AccountList as $ActKey => $ActVal) {
+            if($trf_accounts== "1"){
+                if (in_array(trim(strtoupper($ActVal)), $NBal_trf_AccountID)){
+                    
+                }else{
+                    $OpnBal = 0;$CreditAmt = 0;$DebitAmt = 0;$ClsBalAmt = 0;
+                    // Get Opening Balance From Year
+                    foreach ($AccountList_From as $ActFromKey => $ActFromVal) {
+                        if(trim(strtoupper($ActVal)) == trim(strtoupper($ActFromVal['AccountID']))){
+                            $OpnBal += $ActFromVal["BAL1"];
+                        }
+                    }
+                    // Get Credit Balance
+                    foreach ($credit_bal as $ActCRKey => $ActCRVal) {
+                        if(trim(strtoupper($ActVal)) == trim(strtoupper($ActCRVal['AccountID']))){
+                            $CreditAmt += $ActCRVal["credit_bal"];
+                        }
+                    }  
+                    // Get Debit Balance
+                    foreach ($debit_bal as $ActDRKey => $ActDRVal) {
+                        if(trim(strtoupper($ActVal)) == trim(strtoupper($ActDRVal['AccountID']))){
+                            $DebitAmt += $ActDRVal["debit_bal"];
+                        }
+                    }  
+                    $ClsBalAmt = $OpnBal + $DebitAmt - $CreditAmt;
+                    $insert_array = array(
+                        'PartyID'=>"KASPL",
+                        'PlantID'=>$selected_company,
+                        'FY'=>$trf_to,
+                        'AccountID' =>$ActVal,
+                        'BAL1' =>$ClsBalAmt,
+                    );
+                    $this->db->insert(db_prefix() . 'accountbalances',$insert_array);
+                }
+            }
+        }
+        /*foreach ($AccountList as $key1 => $value1) {
             $find = 0;
+            
             foreach ($AccountList_To as $key2 => $value2) {
-                if(trim(strtoupper($value1['AccountID'])) == trim(strtoupper($value2['AccountID'])) && $value1['PlantID']==$value2['PlantID']){
+                if(trim(strtoupper($value1)) == trim(strtoupper($value2['AccountID']))){
                     //echo "update".$value1['AccountID'];
                     $debitAmt = 0;
                     $balance = 0;
@@ -161,6 +222,7 @@ class Year_transfer_model extends App_Model
                         if (in_array(trim(strtoupper($value1["AccountID"])), $NBal_trf_AccountID)){
                             
                         }else{
+                            $this->db->where('PartyID', "KASPL");
                             $this->db->where('PlantID', $selected_company);
                             $this->db->LIKE('FY', $trf_to);
                             $this->db->where('AccountID',$value1["AccountID"]);
@@ -189,12 +251,14 @@ class Year_transfer_model extends App_Model
                     $balance = $value1['BAL1'] + $debitAmt - $creditAmt;
                         if (in_array(trim(strtoupper($value1["AccountID"])), $NBal_trf_AccountID)){
                             $insert_array = array(
+                                'PartyID'=>"KASPL",
                                 'PlantID'=>$selected_company,
                                 'FY'=>$trf_to,
                                 'AccountID' =>$value1['AccountID'],
                             );
                         }else{
                             $insert_array = array(
+                                'PartyID'=>"KASPL",
                                 'PlantID'=>$selected_company,
                                 'FY'=>$trf_to,
                                 'AccountID' =>$value1['AccountID'],
@@ -204,6 +268,7 @@ class Year_transfer_model extends App_Model
                     
                 }else{
                     $insert_array = array(
+                        'PartyID'=>"KASPL",
                         'PlantID'=>$selected_company,
                         'FY'=>$trf_to,
                         'AccountID' =>$value1['AccountID'],
@@ -212,9 +277,9 @@ class Year_transfer_model extends App_Model
                 $this->db->insert(db_prefix() . 'accountbalances',$insert_array);
                 //echo $value1['AccountID'] . " Insert Accounts";
             }
-        }
+        }*/
         
-        // From Item Stock 
+        /*// From Item Stock 
             $this->db->select( db_prefix() . 'stockmaster.*');
             $this->db->where(db_prefix() . 'stockmaster.PlantID', $selected_company);
             $this->db->where(db_prefix() . 'stockmaster.FY', $trf_from);
@@ -416,7 +481,7 @@ class Year_transfer_model extends App_Model
             $this->increment_next_number();
                 //echo $value1['AccountID'] . " Insert Accounts";
             }
-        }
+        }*/
         //force_download($file_name.'.zip', $backup);
         return true;
     }

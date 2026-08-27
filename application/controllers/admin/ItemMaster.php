@@ -969,7 +969,7 @@
 
 			if($this->input->post('Report_type') == "1"){
 				if(isset($processed[$value['OrderID']])){
-        	continue;
+        	        continue;
 				}
 				$processed[$value['OrderID']] = true;
 
@@ -1129,8 +1129,8 @@
 				$GSTAmt = $CGSTAmt + $SGSTAmt + $IGSTAmt;
 				$OrdTaxableAmt = $TaxableAmt;
 				$NetAmt = $OrdTaxableAmt + $GSTAmt;
-				$totalQtySum += $value['OrderQty'];
-				$html .= '<td style="text-align:right;">' . number_format($value['OrderQty'], 2, '.', '') . '</td>';
+				$totalQtySum += $value['BilledQty'];
+				$html .= '<td style="text-align:right;">' . number_format($value['BilledQty'], 2, '.', '') . '</td>';
 				$html .= '<td style="text-align:right;">' . number_format($NetAmt, 2, '.', '') . '</td>';
 				$html .= '<td style="text-align:right;">' . number_format($value['DiscAmt'], 2, '.', '') . '</td>';
 				$html .= '<td style="text-align:right;">' . number_format($TaxableAmt, 2, '.', '') . '</td>';

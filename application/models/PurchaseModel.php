@@ -16,6 +16,7 @@ class PurchaseModel extends App_Model
     }
     public function PurchaseLedgerCorrection()
     {
+        die;
         $PlantID = $this->session->userdata("root_company");
         $FY = $this->session->userdata("finacial_year");
         $this->db->select("tblK1history.TransID,tblK1history.AccountID,tblK1history.CenterID,tblK1purchasemaster.Inv_date,tblK1history.TransDate,
@@ -176,6 +177,7 @@ class PurchaseModel extends App_Model
             $ord_n++;
             //print_r($PartyLedger);
         }
+        //echo $ord_n;
         /*echo "<pre>";
         print_r($Result);*/
         die;

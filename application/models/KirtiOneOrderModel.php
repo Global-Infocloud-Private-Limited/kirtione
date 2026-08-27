@@ -14,7 +14,328 @@ class KirtiOneOrderModel extends App_Model
 		$result = $this->db->query($sql)->row();
 		return $result;
 	}
-	
+	public function AutoReceiptsCorrection()
+	{
+	    $toDate = '2026-08-20 13:00:00.000000';
+	    $PlantID = $this->session->userdata('root_company');
+		$FY = $this->session->userdata('finacial_year');
+	    $this->db->select('
+            s.SalesID,
+            s.AccountID,
+            s.CashAmt,
+            s.ReceiptVoucherID AS OldVoucherID,
+            l.VoucherID AS NewVoucherID
+        ');
+        
+        $this->db->from('tblK1salesmaster s');
+        
+        $this->db->join(
+            'tblaccountledger l',
+            'l.AccountID = s.AccountID
+             AND l.Amount = s.CashAmt
+             AND l.TType = "C"
+             AND l.PassedFrom = "RECEIPTS"
+             AND l.PlantID = s.PlantID
+             AND l.FY = s.FY',
+            'LEFT'
+        );
+        
+        $this->db->where('s.PlantID', $PlantID);
+        $this->db->where('s.FY', $FY);
+        $this->db->where('s.CashAmt >', 0);
+        $this->db->where('s.TransDate <=', $toDate);
+        $query = $this->db->get();
+        
+        $result = $query->result_array();
+        
+       
+        echo "<pre>";
+        print_r($result);
+        die;
+	}
+	/*public function AutoReceiptsCorrection()
+	{
+	    $PlantID = $this->session->userdata('root_company');
+		$FY = $this->session->userdata('finacial_year');
+		$toDate = '2026-08-20 13:00:00.000000';
+		// All Sale List
+		$this->db->select("K1SM.SalesID,K1SM.AccountID,K1SM.CenterID,K1SM.CashAmt,K1SM.ReceiptVoucherID");
+		$this->db->where('K1SM.PlantID', $PlantID);
+	    $this->db->where('K1SM.FY', $FY);
+	    $this->db->where('K1SM.CashAmt > 0');
+	    //$this->db->where('K1SM.SalesID < TAX261111567');
+	    $this->db->where('K1SM.TransDate <=', $toDate);
+		$this->db->from('tblK1salesmaster K1SM');
+		$SaleDetails = $this->db->get()->result_array();
+		
+		// All Receipt List
+		$this->db->select("l.*");
+		$this->db->where('l.PlantID', $PlantID);
+	    $this->db->where('l.FY', $FY);
+	    $this->db->where('l.PassedFrom ', "RECEIPTS");
+		$this->db->from('tblaccountledger l');
+		$ReceiptsList = $this->db->get()->result_array();
+		
+		// =====================================================
+// STEP 1: Prepare Receipt Records
+// Only TType = C is considered
+// =====================================================
+
+$ReceiptList = [];
+
+foreach ($ReceiptsList as $receipt) {
+
+    if (trim($receipt['TType']) != 'C') {
+        continue;
+    }
+
+    $VoucherID = trim($receipt['VoucherID']);
+    $AccountID = trim($receipt['AccountID']);
+    $Amount    = number_format((float)$receipt['Amount'], 2, '.', '');
+
+    // Exact matching key
+    $ExactKey = $VoucherID . '|' . $AccountID . '|' . $Amount;
+
+    if (!isset($ReceiptList[$ExactKey])) {
+        $ReceiptList[$ExactKey] = [];
+    }
+
+    $ReceiptList[$ExactKey][] = $receipt;
+}
+
+
+// =====================================================
+// STEP 2: Create separate indexes
+// =====================================================
+
+$VoucherAccountList = [];
+$VoucherList        = [];
+$AccountAmountList  = [];
+
+foreach ($ReceiptsList as $receipt) {
+
+    if (trim($receipt['TType']) != 'C') {
+        continue;
+    }
+
+    $VoucherID = trim($receipt['VoucherID']);
+    $AccountID = trim($receipt['AccountID']);
+    $Amount    = number_format((float)$receipt['Amount'], 2, '.', '');
+
+    // Voucher + Account
+    $key = $VoucherID . '|' . $AccountID;
+
+    if (!isset($VoucherAccountList[$key])) {
+        $VoucherAccountList[$key] = [];
+    }
+
+    $VoucherAccountList[$key][] = $receipt;
+
+
+    // Voucher
+    if (!isset($VoucherList[$VoucherID])) {
+        $VoucherList[$VoucherID] = [];
+    }
+
+    $VoucherList[$VoucherID][] = $receipt;
+
+
+    // Account + Amount
+    $key = $AccountID . '|' . $Amount;
+
+    if (!isset($AccountAmountList[$key])) {
+        $AccountAmountList[$key] = [];
+    }
+
+    $AccountAmountList[$key][] = $receipt;
+}
+
+
+// =====================================================
+// STEP 3: Compare Sales with Receipts
+// =====================================================
+
+$MatchedSales       = [];
+$UnmatchedSales     = [];
+$DuplicateReceipts  = [];
+$AmountMismatch     = [];
+$AccountMismatch    = [];
+$VoucherMismatch    = [];
+
+foreach ($SaleDetails as $sale) {
+
+    $SalesID          = $sale['SalesID'];
+    $ReceiptVoucherID = trim($sale['ReceiptVoucherID']);
+    $AccountID        = trim($sale['AccountID']);
+    $CashAmt          = number_format((float)$sale['CashAmt'], 2, '.', '');
+
+
+    // -------------------------------------------------
+    // Exact Match
+    // Voucher + Account + Amount
+    // -------------------------------------------------
+
+    $ExactKey = $ReceiptVoucherID . '|' .
+                $AccountID . '|' .
+                $CashAmt;
+
+    if (isset($ReceiptList[$ExactKey])) {
+
+        $Matches = $ReceiptList[$ExactKey];
+
+        // More than one exact receipt
+        if (count($Matches) > 1) {
+
+            $DuplicateReceipts[] = [
+                'Status'           => 'Duplicate Receipt',
+                'SalesID'          => $SalesID,
+                'ReceiptVoucherID' => $ReceiptVoucherID,
+                'AccountID'        => $AccountID,
+                'CashAmt'          => $CashAmt,
+                'ReceiptCount'     => count($Matches),
+                'Receipts'         => $Matches
+            ];
+
+        } else {
+
+            $MatchedSales[] = [
+                'Status'           => 'Matched',
+                'SalesID'          => $SalesID,
+                'ReceiptVoucherID' => $ReceiptVoucherID,
+                'AccountID'        => $AccountID,
+                'CashAmt'          => $CashAmt,
+                'Receipt'          => $Matches[0]
+            ];
+        }
+
+        continue;
+    }
+
+
+    // -------------------------------------------------
+    // Voucher + Account match
+    // But Amount is different
+    // -------------------------------------------------
+
+    $VoucherAccountKey = $ReceiptVoucherID . '|' . $AccountID;
+
+    if (isset($VoucherAccountList[$VoucherAccountKey])) {
+
+        foreach ($VoucherAccountList[$VoucherAccountKey] as $receipt) {
+
+            $AmountMismatch[] = [
+                'Status'           => 'Amount Mismatch',
+                'SalesID'          => $SalesID,
+                'ReceiptVoucherID' => $ReceiptVoucherID,
+                'AccountID'        => $AccountID,
+                'SaleAmount'       => $CashAmt,
+                'ReceiptAmount'    => number_format(
+                    (float)$receipt['Amount'],
+                    2,
+                    '.',
+                    ''
+                ),
+                'Receipt'          => $receipt
+            ];
+        }
+
+        continue;
+    }
+
+
+    // -------------------------------------------------
+    // Voucher matches
+    // But Account is different
+    // -------------------------------------------------
+
+    if (isset($VoucherList[$ReceiptVoucherID])) {
+
+        $AccountMismatchFound = false;
+
+        foreach ($VoucherList[$ReceiptVoucherID] as $receipt) {
+
+            $ReceiptAccountID = trim($receipt['AccountID']);
+
+            if ($ReceiptAccountID != $AccountID) {
+
+                $AccountMismatchFound = true;
+
+                $AccountMismatch[] = [
+                    'Status'           => 'Account Mismatch',
+                    'SalesID'          => $SalesID,
+                    'ReceiptVoucherID' => $ReceiptVoucherID,
+                    'SaleAccountID'     => $AccountID,
+                    'ReceiptAccountID'  => $ReceiptAccountID,
+                    'SaleAmount'        => $CashAmt,
+                    'ReceiptAmount'     => number_format(
+                        (float)$receipt['Amount'],
+                        2,
+                        '.',
+                        ''
+                    ),
+                    'Receipt' => $receipt
+                ];
+            }
+        }
+
+        if ($AccountMismatchFound) {
+            continue;
+        }
+    }
+
+
+    // -------------------------------------------------
+    // Account + Amount matches
+    // But Voucher is different
+    // -------------------------------------------------
+
+    $AccountAmountKey = $AccountID . '|' . $CashAmt;
+
+    if (isset($AccountAmountList[$AccountAmountKey])) {
+
+        foreach ($AccountAmountList[$AccountAmountKey] as $receipt) {
+
+            if (trim($receipt['VoucherID']) != $ReceiptVoucherID) {
+
+                $VoucherMismatch[] = [
+                    'Status'           => 'Voucher Mismatch',
+                    'SalesID'          => $SalesID,
+                    'SaleVoucherID'    => $ReceiptVoucherID,
+                    'ReceiptVoucherID' => trim($receipt['VoucherID']),
+                    'AccountID'        => $AccountID,
+                    'Amount'           => $CashAmt,
+                    'Receipt'          => $receipt
+                ];
+            }
+        }
+
+        continue;
+    }
+
+
+    // -------------------------------------------------
+    // Nothing matched
+    // -------------------------------------------------
+
+    $UnmatchedSales[] = [
+        'Status'           => 'Unmatched',
+        'SalesID'          => $SalesID,
+        'ReceiptVoucherID' => $ReceiptVoucherID,
+        'AccountID'        => $AccountID,
+        'CashAmt'          => $CashAmt
+    ];
+}
+
+echo "Matched : " . count($MatchedSales) . "<br>";
+echo "Duplicate Receipt : " . count($DuplicateReceipts) . "<br>";
+echo "Amount Mismatch : " . count($AmountMismatch) . "<br>";
+echo "Account Mismatch : " . count($AccountMismatch) . "<br>";
+echo "Voucher Mismatch : " . count($VoucherMismatch) . "<br>";
+echo "Unmatched : " . count($UnmatchedSales) . "<br>";
+		echo "<pre>";
+		print_r($AccountMismatch);
+		die;
+	}*/
 	public function AutoReceiptsGenerate()
 	{
 	    $PlantID = 1;
@@ -651,7 +972,7 @@ class KirtiOneOrderModel extends App_Model
                     die;
                 }*/
                 //die;
-                $StockQty = number_format($ItemWiseBatchList[0]["Stock"], 2);
+                $StockQty = $ItemWiseBatchList[0]["Stock"];
                 if($BilledQty > $StockQty){
                     $StockNotAvl++;
                 }
@@ -1246,9 +1567,6 @@ class KirtiOneOrderModel extends App_Model
 				$this->db->insert(db_prefix() . 'accountledger', $roundledgerentry_debit);
 				$ord++;
 				if ($OrderType == 1) {
-					// $nextReceiptnumber = get_option('next_receipts_number_for_kirti');
-					$nextReceiptnumber = $this->generateNextVoucherIDNew($formattedDate, $selected_company, 'RECEIPTS');
-					$ordinalno = 1;
 					// 		if ($OnlineAmt > 0) {
 					// 			// Receipt Voucher credit Entry to party
 					// 			$receiptentry_credit_toParty = array(
@@ -1294,6 +1612,8 @@ class KirtiOneOrderModel extends App_Model
 					// 			$ordinalno ++ ; 
 					// 		}
 					if ($CashAmt > 0) {
+					    $nextReceiptnumber = $this->generateNextVoucherIDNew($formattedDate, $selected_company, 'RECEIPTS');
+					    $ordinalno = 1;
 						$receiptentry_credit_toParty = array(
 							'PlantID'        => $selected_company,
 							'FY'             => $fy,
@@ -1304,6 +1624,7 @@ class KirtiOneOrderModel extends App_Model
 							'AccountID'      => $AccountId,
 							'CounterAccount' => 'CASH',
 							'CenterID'       => $CenterId,
+							'bill_no'        =>$SalesId,
 							'EntryFor'       => 3,
 							'TType'          => "C",
 							'Amount'         => $CashAmt,
@@ -1325,6 +1646,7 @@ class KirtiOneOrderModel extends App_Model
 							'AccountID'      => 'CASH',
 							'CounterAccount' => $AccountId,
 							'CenterID'       => $CenterId,
+							'bill_no'        =>$SalesId,
 							'EntryFor'       => 3,
 							'TType'          => "D",
 							'Amount'         => $CashAmt,
@@ -1334,15 +1656,12 @@ class KirtiOneOrderModel extends App_Model
 							'UserID'         => $UserID
 						);
 						$this->db->insert(db_prefix() . 'accountledger', $receiptentry_debitto_company);
+						$update_sales = array(
+    						"ReceiptVoucherID" => $nextReceiptnumber
+    					);
+    					$wh_updatesales = '(OrderID="' . $OrderId . '")';
+    					$updatesales = $this->edit_data($tablename = "tblK1salesmaster", $wh_updatesales, $update_sales);
 					}
-					// if ($ordinalno > 1) {
-					// 	$this->increment_next_number('next_receipts_number_for_kirti');
-					$update_sales = array(
-						"ReceiptVoucherID" => $nextReceiptnumber
-					);
-					$wh_updatesales = '(OrderID="' . $OrderId . '")';
-					$updatesales = $this->edit_data($tablename = "tblK1salesmaster", $wh_updatesales, $update_sales);
-					// }
 				}
 				//return $OrderId;
 				$response = array("status"=>true,"message"=>"Order has been created successfully.");
@@ -1508,7 +1827,16 @@ class KirtiOneOrderModel extends App_Model
 					'BatchID'  => $BatchNo,
 				];
 				$ItemWiseBatchList = $this->GetItemBatchListWithStockDSO($filterdata);
-				$StockQty = number_format($ItemWiseBatchList[0]["Stock"]+$ExQty, 2);
+				$StockQty = $ItemWiseBatchList[0]["Stock"]+$ExQty;
+				/*if($UserID == "GIC"){
+                    echo "<pre>";
+                    print_r($ItemWiseBatchList);
+                    echo $StockQty;
+                    echo "<br>";
+                    echo $BilledQty;
+                    die;
+                }*/
+				
 				if($BilledQty > $StockQty){
 					$StockNotAvl++;
 				}
@@ -1984,15 +2312,19 @@ class KirtiOneOrderModel extends App_Model
 			);
 			$this->db->insert(db_prefix() . 'accountledger', $roundledgerentry_debit);
 			$ord++;
-			$this->db->where('PlantID', $selected_company);
-			$this->db->where('FY', $fy);
-			$this->db->where('VoucherID', $SalesMasterData['ReceiptVoucherID']);
-			$this->db->where('PassedFrom', 'RECEIPTS');
-			$this->db->delete(db_prefix() . 'accountledger');
+			$toDate = '2026-08-20 13:00:00.000000';
+			if($formattedDate > $toDate){
+			    $this->db->where('PlantID', $selected_company);
+    			$this->db->where('FY', $fy);
+    			$this->db->where('VoucherID', $SalesMasterData['ReceiptVoucherID']);
+    			$this->db->where('PassedFrom', 'RECEIPTS');
+    			$this->db->delete(db_prefix() . 'accountledger');
+			}
+			
+			
 			if ($OrderType == 1) {
 				// $nextReceiptnumber = get_option('next_receipts_number_for_kirti');  
-				$nextReceiptnumber = $this->generateNextVoucherIDNew($formattedDate, $selected_company, 'RECEIPTS');
-				$ordinalno = 1;
+				
 				// 	if ($OnlineAmt > 0) {
 				// 		// Receipt Voucher credit Entry to party
 				// 		$receiptentry_credit_toParty = array(
@@ -2038,6 +2370,8 @@ class KirtiOneOrderModel extends App_Model
 				// 		$ordinalno ++ ; 
 				// 	}
 				if ($CashAmt > 0) {
+				    $nextReceiptnumber = $this->generateNextVoucherIDNew($formattedDate, $selected_company, 'RECEIPTS');
+				    $ordinalno = 1;
 					$receiptentry_credit_toParty = array(
 						'PlantID'        => $selected_company,
 						'FY'             => $fy,
@@ -2048,6 +2382,7 @@ class KirtiOneOrderModel extends App_Model
 						'AccountID'      => $AccountId,
 						'CounterAccount' => 'CASH',
 						'CenterID'       => $CenterId,
+						'bill_no'        =>$SalesId,
 						'EntryFor'       => 3,
 						'TType'          => "C",
 						'Amount'         => $CashAmt,
@@ -2069,6 +2404,7 @@ class KirtiOneOrderModel extends App_Model
 						'AccountID'      => 'CASH',
 						'CounterAccount' => $AccountId,
 						'CenterID'       => $CenterId,
+						'bill_no'        =>$SalesId,
 						'EntryFor'       => 3,
 						'TType'          => "D",
 						'Amount'         => $CashAmt,
@@ -2078,15 +2414,18 @@ class KirtiOneOrderModel extends App_Model
 						'UserID'         => $UserID
 					);
 					$this->db->insert(db_prefix() . 'accountledger', $receiptentry_debitto_company);
+					$update_sales = array(
+    					"ReceiptVoucherID" => $nextReceiptnumber
+    				);
+    				$wh_updatesales = '(OrderID="' . $OrderId . '")';
+    				$updatesales = $this->edit_data($tablename = "tblK1salesmaster", $wh_updatesales, $update_sales);
+				}else{
+				    $update_sales = array(
+    					"ReceiptVoucherID" => NULL
+    				);
+    				$wh_updatesales = '(OrderID="' . $OrderId . '")';
+    				$updatesales = $this->edit_data($tablename = "tblK1salesmaster", $wh_updatesales, $update_sales);
 				}
-				// if ($ordinalno > 1) {
-				// 	$this->increment_next_number('next_receipts_number_for_kirti');
-				$update_sales = array(
-					"ReceiptVoucherID" => $nextReceiptnumber
-				);
-				$wh_updatesales = '(OrderID="' . $OrderId . '")';
-				$updatesales = $this->edit_data($tablename = "tblK1salesmaster", $wh_updatesales, $update_sales);
-				// }
 			}
 			$response = array("status"=>true,"message"=>"Order has been updated successfully.");
 		}else{
@@ -2140,7 +2479,7 @@ class KirtiOneOrderModel extends App_Model
 			];
 			$ItemWiseBatchList = $this->GetItemBatchListWithStockDSO($filterdata);
 			// $row['BAtch'] = $ItemWiseBatchList;
-			$row['StockQty'] = number_format($ItemWiseBatchList[0]["Stock"] + $row['BilledQty'], 2);
+			$row['StockQty'] = $ItemWiseBatchList[0]["Stock"] + $row['BilledQty'];
 		}
 		return $results;
 	}
@@ -4639,12 +4978,17 @@ class KirtiOneOrderModel extends App_Model
 				} else if ($stockval["BatchNo"] == $batchval && $stockval["TType"] == "T" && $stockval["TType2"] == "IN") {
 					$InQty += ($stockval["TotalQty"]);
 					$ExpDate = _d(substr($stockval["ExpDate"], 0, 10));
+					if(!$isPurch){
+    					$PurchRate = $stockval["PurchRate"];
+    					$CaseQty = $stockval["CaseQty"];
+				        $isPurch = true;
+					}
 				} else if ($stockval["BatchNo"] == $batchval && $stockval["TType"] == "T" && $stockval["TType2"] == "OUT") {
 					$OutQty += $stockval["TotalQty"];
 				} else if ($stockval["BatchNo"] == $batchval && $stockval["TType"] == "I" && $stockval["TType2"] == "INWARD") {
 					$InwardQty += ($stockval["TotalQty"]);
 					$ExpDate = _d(substr($stockval["ExpDate"], 0, 10));
-					$PurchRate = $stockval["PurchRate"];
+				// 	$PurchRate = $stockval["PurchRate"];
 				} else if ($stockval["BatchNo"] == $batchval && $stockval["TType"] == "X") {
 					$AdjQty += ($stockval["TotalQty"]);
 				}

@@ -461,7 +461,10 @@
 				$this->db->where('tblK1history.FY',$fy);
 				$this->db->where('tblK1history.PartyID',"KASPL");
 				$this->db->order_by('tblK1ordermaster.OrderID','DESC');
-				return $this->db->get('tblK1history')->result_array();
+				$result = $this->db->get('tblK1history')->result_array();
+				//echo $this->db->last_query();
+				//die;
+				return $result;
 			}
 		}
 		

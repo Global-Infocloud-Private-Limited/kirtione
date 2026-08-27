@@ -534,7 +534,7 @@
 
 								hot.setDataAtCell(row, colIndex, ItemsOptions[0].id);
 
-								hot.setDataAtCell(row,9, response.PurchRate);
+								hot.setDataAtCell(row,9, (parseFloat(response.PurchRate) * parseFloat(response.CaseQty))); //response.PurchRate * response.CaseQty);
 
 								// Re-render the table after applying changes
 
@@ -565,21 +565,13 @@
 							response = JSON.parse(response);
 
 							if (response.length > 0) {
-
 								hot.setDataAtCell(row,6, response[0].Stock);
-
 								hot.setDataAtCell(row,7, response[0].ExpDate);
-
-								hot.setDataAtCell(row,9, (parseFloat(response[0].PurchRate)));
-
-								}else{
-
+								hot.setDataAtCell(row,9, (parseFloat(response[0].PurchRate) * parseFloat(response[0].CaseQty)));
+							}else{
 								hot.setDataAtCell(row,6, '');
-
 								hot.setDataAtCell(row,7, '');
-
 								hot.setDataAtCell(row,9, '');
-
 							}
 
 							//hot.setDataAtCell(row,9, '0');	
