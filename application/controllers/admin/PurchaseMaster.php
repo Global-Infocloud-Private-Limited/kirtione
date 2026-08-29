@@ -832,7 +832,7 @@
 		{
 			$InvoiceID = $this->input->post('DeliveryChallanNo');
 			$PurchInvoiceID = $this->input->post('PurchInvoiceID');
-			$purchase_list = $this->PurchaseModel->CheckDeliveryChallanNo($InvoiceID,$PurchID,$PurchInvoiceID);
+			$purchase_list = $this->PurchaseModel->CheckDeliveryChallanNo($InvoiceID, $PurchInvoiceID);
 			echo json_encode($purchase_list);
 		}
 		public function load_data_for_purchase()

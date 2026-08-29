@@ -299,7 +299,7 @@
 											</div>
 											<div class="col-md-2">
 												<?php
-													$value = (isset($purchase_details) ? _d(substr($purchase_details->DeliveryChallanNoDate,0,10)) : date('Y-m-d'));
+													$value = (isset($purchase_details) ? _d(substr($purchase_details->DeliveryChallanNoDate,0,10)) : date('d/m/Y'));
 													$attr = array('readonly'=>'readonly');
 													echo render_date_input('DeliveryChallanNoDate', 'Delivery Challan Date', $value, '');
 												?>
@@ -607,9 +607,7 @@
 	$('#DeliveryChallanNo').on('blur', function(){
 		var DeliveryChallanNo = $(this).val();
 		var PurchInvoiceID = '<?= isset($purchase_details) ? $purchase_details->Inv_No : '' ?>';
-		if(PurchInvoiceID == ""){
-			alert("Please select purchase invoice.");
-		}else if(DeliveryChallanNo !="" || DeliveryChallanNo != null){
+		if(DeliveryChallanNo !="" || DeliveryChallanNo != null){
 			$.ajax({
 				url: "<?php echo admin_url(); ?>PurchaseMaster/CheckDeliveryChallanNo",
 				dataType: "JSON",
@@ -628,7 +626,7 @@
 				success:function(data)
 				{
 					if(data){
-						alert("The entered vendor document number already exists for this purchase.");
+						alert("Entered delivery challan number already exists.");
 						$("#DeliveryChallanNo").val("");
 					}
 				}

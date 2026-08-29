@@ -241,7 +241,7 @@
 											</div>
 											<div class="col-md-2">
 												<?php
-													$value = (isset($purchase_details) ? _d(substr($purchase_details->InvoiceNoDate,0,10)) : date('Y-m-d'));
+													$value = (isset($purchase_details) ? _d(substr($purchase_details->InvoiceNoDate,0,10)) : date('d/m/Y'));
 													$attr = array('readonly'=>'readonly');
 													echo render_date_input('InvoiceNoDate', 'Vendor Invoice Date', $value, '');
 												?>
@@ -254,7 +254,7 @@
 											</div>
 											<div class="col-md-2">
 												<?php
-													$value = (isset($purchase_details) ? _d(substr($purchase_details->DeliveryChallanNoDate,0,10)) : date('Y-m-d'));
+													$value = (isset($purchase_details) ? _d(substr($purchase_details->DeliveryChallanNoDate,0,10)) : '');
 													$attr = array('readonly'=>'readonly');
 													echo render_date_input('DeliveryChallanNoDate', 'Delivery Challan Date', $value, $attr);
 												?>
@@ -833,6 +833,16 @@
 
 	}
 
+	function dateTransform(date) {
+		// if(date == '') return '';
+		let dateObj = new Date(date);
+		let month = dateObj.getMonth() + 1;
+		let day = dateObj.getDate();
+		let year = dateObj.getFullYear();
+		let newDate = day + "/" + month + "/" + year;
+		return newDate;
+	}
+
 	function GetPIDetails(PINo){
 		$('#CenterName').val('');
 		if(PINo == '')
@@ -861,6 +871,7 @@
 					$('#CenterName').val(rtndata.InvoiceData.CenterName);
 					$('#VendorDocNo').val(rtndata.InvoiceData.InvoiceNo);
 					$('#DeliveryChallanNo').val(rtndata.InvoiceData.DeliveryChallanNo);
+					$('#DeliveryChallanNoDate').val(dateTransform(rtndata.InvoiceData.DeliveryChallanNoDate));
 					var dataObject2 = [];
 					if(rtndata.historytbl.length > 0)
 					{
@@ -1237,7 +1248,7 @@
 		});
 		$("#paymode").change(function()
 		{
-			var isEdit = <?php echo json_encode($isedit);?>
+			var isEdit = '<?php echo json_encode($isedit);?>';
 			if(isEdit == '')
 			{
 				var PaymentMode = $("#paymode").val();
@@ -1423,22 +1434,22 @@
 	});
 </script>
 <script>
-    $(document).ready(function()
-    {
-        var maxEndDate = new Date('Y/m/d');
-        var fin_y = "<?php echo $this->session->userdata('finacial_year')?>";
-        var year = "20"+fin_y;
-        var cur_y = new Date().getFullYear().toString().substr(-2);
-        if(cur_y > fin_y){
-            var year2 = parseInt(fin_y) + parseInt(1);
-            var year2_new = "20"+year2;
-            var e_dat = new Date(year2_new+'/03/31');
-            var maxEndDate_new = e_dat;
-			}else{
-            var maxEndDate_new = maxEndDate;
+	$(document).ready(function()
+	{
+		var maxEndDate = new Date('Y/m/d');
+		var fin_y = "<?php echo $this->session->userdata('finacial_year')?>";
+		var year = "20"+fin_y;
+		var cur_y = new Date().getFullYear().toString().substr(-2);
+		if(cur_y > fin_y){
+			var year2 = parseInt(fin_y) + parseInt(1);
+			var year2_new = "20"+year2;
+			var e_dat = new Date(year2_new+'/03/31');
+			var maxEndDate_new = e_dat;
+		}else{
+		var maxEndDate_new = maxEndDate;
 		}
 
-        var minStartDate = new Date(year, 03);
+		var minStartDate = new Date(year, 03);
 		$('#prd_date').datetimepicker({
 			format: 'd/m/Y',
 			minDate: minStartDate,
