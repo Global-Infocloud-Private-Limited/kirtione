@@ -10362,6 +10362,240 @@ class UserApp_Controller extends ClientsController {
             return ["status" => true, "message" => "Reminder list found", "data" => $list];
         }
     }
+
+    // ================== Expired stock list ========================
+    public function ExpiredStockListAPI($param=FALSE) 
+    {
+        $response = array();
+        if ($_SERVER['REQUEST_METHOD'] == 'POST')
+        {
+            $content_type=$_SERVER['CONTENT_TYPE'];
+            if ($content_type!="application/json") {
+                $response = array("error" => true,"message" => "Invalid content type.");  
+            }else{
+                $this->load->model('UserApp_Model');
+                $content=trim(file_get_contents("php://input"));
+                $decode=json_decode($content,true);
+                $checkLoginTokan = $this->CheckTokanStaff($decode['login_tokan'],$decode['phonenumber']);
+                if($checkLoginTokan)
+                {
+                    $data = array(
+                        "AccountID"=>$checkLoginTokan["AccountID"]
+                    );
+        			$response = $this->ExpiredStockList($data);
+                }else{
+                    $response = array("status"=>false,"message"=>"Please login with registered mobile number","phonenumber"=>$decode['phonenumber']);
+                }
+            }
+        }
+        echo json_encode($response);   
+    }
+
+    public function ExpiredStockList($data){
+        // $this->db->where('UserID', $data['AccountID']);
+        // $this->db->where('ReminderDate >=', date('Y-m-d'));
+        // $this->db->order_by('ReminderDate', 'ASC');
+        // $list = $this->db->get(db_prefix().'ReminderMaster')->result_array();
+        // if(empty($list)){
+        //     return ["status" => false, "message" => "Reminder list not found"];
+        // }else{
+        //     return ["status" => true, "message" => "Reminder list found", "data" => $list];
+        // }
+
+        $CenterID   = $data['CenterID'];
+        $PartyID    = $data['PartyID'];
+        $ItemGroup  = $data['ItemGroup'];
+        $DaysFilter = $data['Days'];
+
+        $this->db->select('tblK1history.*,tblproduct.ProductName');
+        $this->db->from('tblK1history');
+        $this->db->join('tblproduct','tblproduct.ProductID = tblK1history.ItemID','inner');
+
+        // Center filter
+        if (!empty($CenterID)) {
+            $CenterID = is_array($CenterID) ? $CenterID : [$CenterID];
+            $this->db->where_in('tblK1history.CenterID', $CenterID);
+        }
+
+        // Party filter
+        if (!empty($PartyID)) {
+            $PartyID = is_array($PartyID) ? $PartyID : [$PartyID];
+            $this->db->where_in('tblK1history.PartyID', $PartyID);
+        }
+
+        // Item Group filter
+        if (!empty($ItemGroup)) {
+            $ItemGroup = is_array($ItemGroup) ? $ItemGroup : [$ItemGroup];
+            $this->db->where_in('tblproduct.Subcategory', $ItemGroup);
+        }
+
+        if ($DaysFilter !== '' && $DaysFilter !== null) {
+            $DaysFilter = (int)$DaysFilter;
+            $currentDate = date('Y-m-d');
+            $endDate = date('Y-m-d', strtotime($currentDate . ' +' . $DaysFilter . ' days'));
+
+            $this->db->where("
+                CASE
+                    WHEN tblK1history.ExpDate LIKE '%/%'
+                        THEN STR_TO_DATE(tblK1history.ExpDate, '%d/%m/%Y')
+
+                    WHEN tblK1history.ExpDate LIKE '%:%'
+                        THEN DATE(tblK1history.ExpDate)
+
+                    ELSE STR_TO_DATE(tblK1history.ExpDate, '%Y-%m-%d')
+                END BETWEEN " . $this->db->escape($currentDate) . "
+                AND " . $this->db->escape($endDate) . "
+            ", null, false);
+        }
+
+        $this->db->order_by("
+            CASE
+                WHEN tblK1history.ExpDate IS NULL
+                    OR tblK1history.ExpDate = ''
+                THEN 1
+                ELSE 0
+            END
+        ", '', false);
+
+        $this->db->order_by("
+            CASE
+                WHEN tblK1history.ExpDate LIKE '%/%'
+                    THEN STR_TO_DATE(tblK1history.ExpDate, '%d/%m/%Y')
+
+                WHEN tblK1history.ExpDate LIKE '%:%'
+                    THEN DATE(tblK1history.ExpDate)
+
+                ELSE STR_TO_DATE(tblK1history.ExpDate, '%Y-%m-%d')
+            END
+        ", '', false);
+
+        $query = $this->db->get();
+        $GetHistoryData = $query->result_array();
+
+        $BatchList = [];
+        foreach ($GetHistoryData as $row) {
+            if (empty($row['BatchNo'])) {
+                continue;
+            }
+
+            $ItemID   = $row['ItemID'];
+            $BatchNo  = $row['BatchNo'];
+            $Center   = $row['CenterID'];
+            $ExpDate  = $row['ExpDate'];
+
+            if (!empty($ExpDate)) {
+                if (strpos($ExpDate, '/') !== false) {
+                    $timestamp = strtotime(str_replace('/', '-', $ExpDate));
+                } else {
+                    $timestamp = strtotime($ExpDate);
+                }
+
+                $NormalizedExpDate = $timestamp ? date('Y-m-d', $timestamp) : '';
+            } else {
+                $NormalizedExpDate = '';
+            }
+
+            $BatchKey = $ItemID . '_' . $BatchNo . '_' . $Center;
+            if (!isset($BatchList[$BatchKey])) {
+                $BatchList[$BatchKey] = [
+                    'ItemID'      => $ItemID,
+                    'BatchNo'     => $BatchNo,
+                    'ExpDate'     => $NormalizedExpDate,
+                    'ProductName' => $row['ProductName'],
+                    'CenterID'    => $Center,
+
+                    'OpeningQty'  => 0,
+                    'InwardQty'   => 0,
+                    'PurchQty'    => 0,
+                    'PurchRtnQty' => 0,
+                    'SaleQty'     => 0,
+                    'SaleRtnQty'  => 0,
+                    'PrdQty'      => 0,
+                    'IssueQty'    => 0,
+                    'AdjQty'      => 0,
+                    'InQty'       => 0,
+                    'OutQty'      => 0
+                ];
+            }
+
+            $Qty = (float)$row['BilledQty'];
+            // Sale
+            if ( $row['TType'] == 'O' && $row['TType2'] == 'SALE' ) {
+                $BatchList[$BatchKey]['SaleQty'] += $Qty;
+            }
+
+            // Fresh Sale Return
+            elseif ( $row['TType'] == 'SR' && $row['TType2'] == 'FRESH RETURN' ) {
+                $BatchList[$BatchKey]['SaleRtnQty'] += $Qty;
+            }
+
+            // Purchase
+            elseif ( $row['TType'] == 'P' && $row['TType2'] == 'Purchase' ) {
+                $BatchList[$BatchKey]['PurchQty'] += $Qty;
+            }
+
+            // Purchase Return
+            elseif ( $row['TType'] == 'PR' && $row['TType2'] == 'PURCHASE RETURN' ) {
+                $BatchList[$BatchKey]['PurchRtnQty'] += $Qty;
+            }
+
+            // Transfer IN
+            elseif ( $row['TType'] == 'T' && $row['TType2'] == 'IN' ) {
+                $BatchList[$BatchKey]['InQty'] += $Qty;
+            }
+
+            // Transfer OUT
+            elseif ( $row['TType'] == 'T' && $row['TType2'] == 'OUT' ) {
+                $BatchList[$BatchKey]['OutQty'] += $Qty;
+            }
+
+            // Purchase Inward
+            elseif ( $row['TType'] == 'I' && $row['TType2'] == 'INWARD' ) {
+                $BatchList[$BatchKey]['InwardQty'] += $Qty;
+            }
+
+            // Adjustment
+            elseif ($row['TType'] == 'X') {
+                $BatchList[$BatchKey]['AdjQty'] += $Qty;
+            }
+        }
+
+        $FinalData = [];
+        foreach ($BatchList as $Batch) {
+
+            $StockQty =
+                $Batch['OpeningQty']
+                + $Batch['InwardQty']
+                + $Batch['PurchQty']
+                - $Batch['PurchRtnQty']
+                - $Batch['SaleQty']
+                + $Batch['SaleRtnQty']
+                + $Batch['PrdQty']
+                - $Batch['IssueQty']
+                - $Batch['AdjQty']
+                + $Batch['InQty']
+                - $Batch['OutQty'];
+
+            if ((float)$StockQty == 0) {
+                continue;
+            }
+
+            $FinalData[] = [
+                'ItemID'      => $Batch['ItemID'],
+                'ProductName' => $Batch['ProductName'],
+                'CenterID'    => $Batch['CenterID'],
+                'BatchNo'     => $Batch['BatchNo'],
+                'ExpDate'     => $Batch['ExpDate'],
+                'StockQty'    => round($StockQty, 2)
+            ];
+        }
+
+        if(empty($FinalData)){
+            return ["status" => false, "message" => "List not found"];
+        }else{
+            return ["status" => true, "message" => "List found", "data" => $FinalData];
+        }
+    }
     
 //================ Save K1 Sale Order Order ====================================
     public function K1SaleOrderSaveAPI($param=FALSE) 

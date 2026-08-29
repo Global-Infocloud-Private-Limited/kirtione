@@ -395,6 +395,7 @@ $route['K1SaleOrderList'] = 'UserApp_Controller/K1SaleOrderListAPI';
 $route['K1SaleOrderDetails'] = 'UserApp_Controller/K1SaleOrderDetailsAPI';
 $route['K1SaveReminders'] = 'UserApp_Controller/K1SaveRemindersAPI';
 $route['K1ListReminders'] = 'UserApp_Controller/K1ListRemindersAPI';
+$route['ExpiredStockList'] = 'UserApp_Controller/ExpiredStockListAPI';
 /* Customer Enquiry*/
 $route['AddEnquiry'] = 'UserApp_Controller/CustomerEnquiry';
 

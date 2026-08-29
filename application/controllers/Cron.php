@@ -181,4 +181,42 @@ class Cron extends App_Controller
             ]);
             echo '</pre>';
     }
+
+    function send_notification($title,$screen,$body,$booking_id,$to)
+    {
+        $data_arrary = array(
+            "title"=>$title,
+            "screen"=>$screen,
+            "body"=>$body,
+            "booking_id"=>$booking_id
+        );
+        $post_data = array(
+            "priority"=>"HIGH",
+            "data"=>$data_arrary,
+            "to"=>$to
+        );
+        $finel_data = json_encode($post_data);
+        
+        $curl = curl_init();
+        curl_setopt_array($curl, array(
+            CURLOPT_URL => "https://fcm.googleapis.com/fcm/send",
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_ENCODING => "",
+            CURLOPT_MAXREDIRS => 10,
+            CURLOPT_TIMEOUT => 30,
+            CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
+            CURLOPT_CUSTOMREQUEST => "POST",
+            CURLOPT_POSTFIELDS => $finel_data,
+            CURLOPT_HTTPHEADER => array(
+                    "authorization: key=AAAAy7QqWaM:APA91bFtzRBc-XbKW6CVNBYP20vVnfnNghf6tWrUN8YxJQJ3YXl8B0s8P5-aDC_O-B46PZ5srQVnHx8A0HgqQF0ZIq29kTJKrk9KKvhREuB5oHrmfc0nPsUXf58qPVkHxMUDVU5Vjb4K",
+                    "content-type: application/json"
+                ),
+            )
+        );
+        $response = curl_exec($curl);
+        $err = curl_error($curl);
+        curl_close($curl);
+       // return $response;
+        
+    }
 }
