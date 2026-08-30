@@ -182,6 +182,182 @@ class Cron extends App_Controller
             echo '</pre>';
     }
 
+    public function ExpiredStockNotification(){
+      header('Access-Control-Allow-Origin: *');
+      header('Access-Control-Allow-Methods: GET, POST, OPTIONS');
+      header('Access-Control-Allow-Headers: Content-Type, Authorization, X-Requested-With');
+      header('Content-Type: application/json');
+
+      if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
+        http_response_code(200);
+        exit;
+      }
+      
+      $DaysFilter = 30;
+      $this->db->select('tblK1history.*,tblproduct.ProductName');
+      $this->db->from('tblK1history');
+      $this->db->join('tblproduct','tblproduct.ProductID = tblK1history.ItemID','inner');
+
+      $currentDate = date('Y-m-d');
+      $date10Days = date( 'Y-m-d', strtotime($currentDate . ' +3 days') );
+      $date30Days = date( 'Y-m-d', strtotime($currentDate . ' +30 days') );
+      $expiryDates = [ $currentDate, $date10Days, $date30Days];
+      $expiryDatesSql = implode( ',', array_map( [$this->db, 'escape'], $expiryDates ) );
+
+      $this->db->where("
+          CASE
+              WHEN tblK1history.ExpDate LIKE '%/%'
+                  THEN STR_TO_DATE(tblK1history.ExpDate, '%d/%m/%Y')
+
+              WHEN tblK1history.ExpDate LIKE '%:%'
+                  THEN DATE(tblK1history.ExpDate)
+
+              ELSE STR_TO_DATE(tblK1history.ExpDate, '%Y-%m-%d')
+          END IN ($expiryDatesSql)
+      ", null, false);
+
+      $this->db->where('tblK1history.BatchNo !=', '');
+
+      $this->db->order_by("
+          CASE
+              WHEN tblK1history.ExpDate LIKE '%/%'
+                  THEN STR_TO_DATE(tblK1history.ExpDate, '%d/%m/%Y')
+
+              WHEN tblK1history.ExpDate LIKE '%:%'
+                  THEN DATE(tblK1history.ExpDate)
+
+              ELSE STR_TO_DATE(tblK1history.ExpDate, '%Y-%m-%d')
+          END
+      ", '', false);
+
+      $query = $this->db->get();
+      $GetHistoryData = $query->result_array();
+
+      $BatchList = [];
+      foreach ($GetHistoryData as $row) {
+          if (empty($row['BatchNo'])) {
+              continue;
+          }
+
+          $ItemID   = $row['ItemID'];
+          $BatchNo  = $row['BatchNo'];
+          $Center   = $row['CenterID'];
+          $ExpDate  = $row['ExpDate'];
+
+          if (!empty($ExpDate)) {
+              if (strpos($ExpDate, '/') !== false) {
+                  $timestamp = strtotime(str_replace('/', '-', $ExpDate));
+              } else {
+                  $timestamp = strtotime($ExpDate);
+              }
+
+              $NormalizedExpDate = $timestamp ? date('Y-m-d', $timestamp) : '';
+          } else {
+              $NormalizedExpDate = '';
+          }
+
+          $BatchKey = $ItemID . '_' . $BatchNo . '_' . $Center;
+          if (!isset($BatchList[$BatchKey])) {
+              $BatchList[$BatchKey] = [
+                  'ItemID'      => $ItemID,
+                  'BatchNo'     => $BatchNo,
+                  'ExpDate'     => $NormalizedExpDate,
+                  'ProductName' => $row['ProductName'],
+                  'CenterID'    => $Center,
+
+                  'OpeningQty'  => 0,
+                  'InwardQty'   => 0,
+                  'PurchQty'    => 0,
+                  'PurchRtnQty' => 0,
+                  'SaleQty'     => 0,
+                  'SaleRtnQty'  => 0,
+                  'PrdQty'      => 0,
+                  'IssueQty'    => 0,
+                  'AdjQty'      => 0,
+                  'InQty'       => 0,
+                  'OutQty'      => 0
+              ];
+          }
+
+          $Qty = (float)$row['BilledQty'];
+          // Sale
+          if ( $row['TType'] == 'O' && $row['TType2'] == 'SALE' ) {
+              $BatchList[$BatchKey]['SaleQty'] += $Qty;
+          }
+
+          // Fresh Sale Return
+          elseif ( $row['TType'] == 'SR' && $row['TType2'] == 'FRESH RETURN' ) {
+              $BatchList[$BatchKey]['SaleRtnQty'] += $Qty;
+          }
+
+          // Purchase
+          elseif ( $row['TType'] == 'P' && $row['TType2'] == 'Purchase' ) {
+              $BatchList[$BatchKey]['PurchQty'] += $Qty;
+          }
+
+          // Purchase Return
+          elseif ( $row['TType'] == 'PR' && $row['TType2'] == 'PURCHASE RETURN' ) {
+              $BatchList[$BatchKey]['PurchRtnQty'] += $Qty;
+          }
+
+          // Transfer IN
+          elseif ( $row['TType'] == 'T' && $row['TType2'] == 'IN' ) {
+              $BatchList[$BatchKey]['InQty'] += $Qty;
+          }
+
+          // Transfer OUT
+          elseif ( $row['TType'] == 'T' && $row['TType2'] == 'OUT' ) {
+              $BatchList[$BatchKey]['OutQty'] += $Qty;
+          }
+
+          // Purchase Inward
+          elseif ( $row['TType'] == 'I' && $row['TType2'] == 'INWARD' ) {
+              $BatchList[$BatchKey]['InwardQty'] += $Qty;
+          }
+
+          // Adjustment
+          elseif ($row['TType'] == 'X') {
+              $BatchList[$BatchKey]['AdjQty'] += $Qty;
+          }
+      }
+
+      $FinalData = [];
+      foreach ($BatchList as $Batch) {
+
+          $StockQty =
+              $Batch['OpeningQty']
+              + $Batch['InwardQty']
+              + $Batch['PurchQty']
+              - $Batch['PurchRtnQty']
+              - $Batch['SaleQty']
+              + $Batch['SaleRtnQty']
+              + $Batch['PrdQty']
+              - $Batch['IssueQty']
+              - $Batch['AdjQty']
+              + $Batch['InQty']
+              - $Batch['OutQty'];
+
+          if ((float)$StockQty == 0) {
+              continue;
+          }
+
+          $FinalData[] = [
+              'ItemID'      => $Batch['ItemID'],
+              'ProductName' => $Batch['ProductName'],
+              'CenterID'    => $Batch['CenterID'],
+              'BatchNo'     => $Batch['BatchNo'],
+              'ExpDate'     => $Batch['ExpDate'],
+              'StockQty'    => round($StockQty, 2)
+          ];
+      }
+
+      if(empty($FinalData)){
+        echo  json_encode(["status" => false, "message" => "List not found"]);
+      }else{
+        echo  json_encode(["status" => true, "message" => "List found", "data" => $FinalData]);
+      }
+    }
+
     function send_notification($title,$screen,$body,$booking_id,$to)
     {
         $data_arrary = array(

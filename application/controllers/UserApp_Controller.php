@@ -10367,6 +10367,16 @@ class UserApp_Controller extends ClientsController {
     public function ExpiredStockListAPI($param=FALSE) 
     {
         $response = array();
+        header('Access-Control-Allow-Origin: *');
+        header('Access-Control-Allow-Methods: GET, POST, OPTIONS');
+        header('Access-Control-Allow-Headers: Content-Type, Authorization, X-Requested-With');
+        header('Content-Type: application/json');
+
+        if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
+            http_response_code(200);
+            exit;
+        }
+
         if ($_SERVER['REQUEST_METHOD'] == 'POST')
         {
             $content_type=$_SERVER['CONTENT_TYPE'];
@@ -10376,36 +10386,30 @@ class UserApp_Controller extends ClientsController {
                 $this->load->model('UserApp_Model');
                 $content=trim(file_get_contents("php://input"));
                 $decode=json_decode($content,true);
-                $checkLoginTokan = $this->CheckTokanStaff($decode['login_tokan'],$decode['phonenumber']);
-                if($checkLoginTokan)
-                {
+                // $checkLoginTokan = $this->CheckTokanStaff($decode['login_tokan'],$decode['phonenumber']);
+                // if($checkLoginTokan)
+                // {
                     $data = array(
-                        "AccountID"=>$checkLoginTokan["AccountID"]
+                        // "AccountID"=>$checkLoginTokan["AccountID"],
+                        "CenterID" => $decode['CenterID'] ?? '',
+                        "PartyID" => $decode['PartyID'] ?? '',
+                        "ItemGroup" => $decode['ItemGroup'] ?? '',
+                        "DaysFilter" => $decode['Days'] ?? 10
                     );
         			$response = $this->ExpiredStockList($data);
-                }else{
-                    $response = array("status"=>false,"message"=>"Please login with registered mobile number","phonenumber"=>$decode['phonenumber']);
-                }
+                // }else{
+                //     $response = array("status"=>false,"message"=>"Please login with registered mobile number","phonenumber"=>$decode['phonenumber']);
+                // }
             }
         }
         echo json_encode($response);   
     }
 
     public function ExpiredStockList($data){
-        // $this->db->where('UserID', $data['AccountID']);
-        // $this->db->where('ReminderDate >=', date('Y-m-d'));
-        // $this->db->order_by('ReminderDate', 'ASC');
-        // $list = $this->db->get(db_prefix().'ReminderMaster')->result_array();
-        // if(empty($list)){
-        //     return ["status" => false, "message" => "Reminder list not found"];
-        // }else{
-        //     return ["status" => true, "message" => "Reminder list found", "data" => $list];
-        // }
-
-        $CenterID   = $data['CenterID'];
-        $PartyID    = $data['PartyID'];
-        $ItemGroup  = $data['ItemGroup'];
-        $DaysFilter = $data['Days'];
+        $CenterID   = $data['CenterID'] ?? '';
+        $PartyID    = $data['PartyID'] ?? '';
+        $ItemGroup  = $data['ItemGroup'] ?? '';
+        $DaysFilter = $data['Days'] ?? 10;
 
         $this->db->select('tblK1history.*,tblproduct.ProductName');
         $this->db->from('tblK1history');
