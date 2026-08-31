@@ -199,39 +199,48 @@ class Cron extends App_Controller
       $this->db->join('tblproduct','tblproduct.ProductID = tblK1history.ItemID','inner');
 
       $currentDate = date('Y-m-d');
-      $date10Days = date( 'Y-m-d', strtotime($currentDate . ' +3 days') );
+      $date10Days = date( 'Y-m-d', strtotime($currentDate . ' +10 days') );
       $date30Days = date( 'Y-m-d', strtotime($currentDate . ' +30 days') );
       $expiryDates = [ $currentDate, $date10Days, $date30Days];
       $expiryDatesSql = implode( ',', array_map( [$this->db, 'escape'], $expiryDates ) );
 
       $this->db->where("
-          CASE
-              WHEN tblK1history.ExpDate LIKE '%/%'
-                  THEN STR_TO_DATE(tblK1history.ExpDate, '%d/%m/%Y')
+				CASE
+					WHEN tblK1history.ExpDate LIKE '%/%'
+						THEN STR_TO_DATE(tblK1history.ExpDate, '%d/%m/%Y')
 
-              WHEN tblK1history.ExpDate LIKE '%:%'
-                  THEN DATE(tblK1history.ExpDate)
+					WHEN tblK1history.ExpDate LIKE '%:%'
+						THEN DATE(tblK1history.ExpDate)
 
-              ELSE STR_TO_DATE(tblK1history.ExpDate, '%Y-%m-%d')
-          END IN ($expiryDatesSql)
+					ELSE STR_TO_DATE(tblK1history.ExpDate, '%Y-%m-%d')
+				END IN ($expiryDatesSql)
       ", null, false);
 
       $this->db->where('tblK1history.BatchNo !=', '');
 
       $this->db->order_by("
-          CASE
-              WHEN tblK1history.ExpDate LIKE '%/%'
-                  THEN STR_TO_DATE(tblK1history.ExpDate, '%d/%m/%Y')
+				CASE
+					WHEN tblK1history.ExpDate LIKE '%/%'
+						THEN STR_TO_DATE(tblK1history.ExpDate, '%d/%m/%Y')
 
-              WHEN tblK1history.ExpDate LIKE '%:%'
-                  THEN DATE(tblK1history.ExpDate)
+					WHEN tblK1history.ExpDate LIKE '%:%'
+						THEN DATE(tblK1history.ExpDate)
 
-              ELSE STR_TO_DATE(tblK1history.ExpDate, '%Y-%m-%d')
-          END
+					ELSE STR_TO_DATE(tblK1history.ExpDate, '%Y-%m-%d')
+				END
       ", '', false);
 
       $query = $this->db->get();
       $GetHistoryData = $query->result_array();
+
+      $centers = $this->db->select('tcm.CenterID, tcm.CenterName, tcm.MobileNo, ts.fcm_token')
+        	                ->from('tblCenterMaster as tcm')
+													->join('tblstaff as ts', 'ts.phonenumber = tcm.MobileNo', 'left')
+													->get()
+													->result_array();
+
+			$centers = array_column($centers, null, 'CenterID');
+			// echo json_encode($centers); die;
 
       $BatchList = [];
       foreach ($GetHistoryData as $row) {
@@ -264,6 +273,7 @@ class Cron extends App_Controller
                   'ExpDate'     => $NormalizedExpDate,
                   'ProductName' => $row['ProductName'],
                   'CenterID'    => $Center,
+									'FCM_Token'   => $centers[$Center]['fcm_token'],
 
                   'OpeningQty'  => 0,
                   'InwardQty'   => 0,
@@ -341,13 +351,33 @@ class Cron extends App_Controller
               continue;
           }
 
+					$description = $Batch['ProductName'].' Stock for '.$Batch['BatchNo'].' Expired on '.$Batch['ExpDate'];
+					switch ($Batch['ExpDate']) {
+						case $currentDate:
+							$description = $Batch['ProductName'].' Stock for '.$Batch['BatchNo'].' Expired today. Qty: '.$StockQty;
+							break;
+						case $date10Days:
+							$description = $Batch['ProductName'].' Stock for '.$Batch['BatchNo'].' Expired in 10 days. Qty: '.$StockQty;
+							break;
+						case $date30Days:
+							$description = $Batch['ProductName'].' Stock for '.$Batch['BatchNo'].' Expired in 30 days. Qty: '.$StockQty;
+							break;
+						default:
+							break;
+					}
+
+					if(!empty($Batch['FCM_Token']) && $Batch['FCM_Token'] != null){
+						$this->send_notification('Stock Alert', '1', $description, '', $Batch['FCM_Token']);
+					}
+
           $FinalData[] = [
-              'ItemID'      => $Batch['ItemID'],
-              'ProductName' => $Batch['ProductName'],
-              'CenterID'    => $Batch['CenterID'],
-              'BatchNo'     => $Batch['BatchNo'],
-              'ExpDate'     => $Batch['ExpDate'],
-              'StockQty'    => round($StockQty, 2)
+						'ItemID'      => $Batch['ItemID'],
+						'ProductName' => $Batch['ProductName'],
+						'CenterID'    => $Batch['CenterID'],
+						'FCM_Token'   => $Batch['FCM_Token'],
+						'BatchNo'     => $Batch['BatchNo'],
+						'ExpDate'     => $Batch['ExpDate'],
+						'StockQty'    => round($StockQty, 2)
           ];
       }
 

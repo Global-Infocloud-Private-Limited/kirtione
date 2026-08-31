@@ -8841,7 +8841,8 @@ class UserApp_Controller extends ClientsController {
                     "mobile"=>$decode['mobile'],
                     "password"=>$decode['password'],
                     "staff"=>$decode['staff'],
-                    "DeviceID"=>$decode['DeviceID']
+                    "DeviceID"=>$decode['DeviceID'],
+                    "fcm_token" => $decode['fcm_token']
                 );
                 $response=$this->login($data);
             }
@@ -8856,7 +8857,8 @@ class UserApp_Controller extends ClientsController {
                 $params['mobile'],
                 $params['password'],
                 $params['staff'],
-                $params['DeviceID']
+                $params['DeviceID'],
+                $params['fcm_token']
             );
         return $success; 
     } 
@@ -10386,20 +10388,20 @@ class UserApp_Controller extends ClientsController {
                 $this->load->model('UserApp_Model');
                 $content=trim(file_get_contents("php://input"));
                 $decode=json_decode($content,true);
-                // $checkLoginTokan = $this->CheckTokanStaff($decode['login_tokan'],$decode['phonenumber']);
-                // if($checkLoginTokan)
-                // {
+                $checkLoginTokan = $this->CheckTokanStaff($decode['login_tokan'],$decode['phonenumber']);
+                if($checkLoginTokan)
+                {
                     $data = array(
-                        // "AccountID"=>$checkLoginTokan["AccountID"],
-                        "CenterID" => $decode['CenterID'] ?? '',
-                        "PartyID" => $decode['PartyID'] ?? '',
+                        "AccountID" => $checkLoginTokan["AccountID"],
+                        "CenterID"  => $decode['CenterID'] ?? '',
+                        "PartyID"   => $decode['PartyID'] ?? '',
                         "ItemGroup" => $decode['ItemGroup'] ?? '',
-                        "DaysFilter" => $decode['Days'] ?? 10
+                        "DaysFilter"    => $decode['Days'] ?? 10
                     );
         			$response = $this->ExpiredStockList($data);
-                // }else{
-                //     $response = array("status"=>false,"message"=>"Please login with registered mobile number","phonenumber"=>$decode['phonenumber']);
-                // }
+                }else{
+                    $response = array("status"=>false,"message"=>"Please login with registered mobile number","phonenumber"=>$decode['phonenumber']);
+                }
             }
         }
         echo json_encode($response);   

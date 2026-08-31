@@ -1,98 +1,52 @@
 <?php defined('BASEPATH') or exit('No direct script access allowed'); ?>
-
 <?php init_head(); ?>
-
-
-
 <style>
   .th_total {
-
     padding-right: 10px;
-
   }
 </style>
 
-
-
 <div id="wrapper">
-
   <div class="panel_s">
-
     <div class="panel-body">
-
       <div class="row">
-
         <div class="col-md-12 text-centerr">
-
           <nav aria-label="breadcrumb">
-
             <ol class="breadcrumb custombreadcrumb" style="background-color:#fff !important; margin-Bottom:0px !important;">
-
               <li class="breadcrumb-item"><a href="<?= admin_url(); ?>"><b><i class="fa fa-home fa-fw fa-lg"></i></b></a></li>
-
               <li class="breadcrumb-item active text-capitalize"><b>Accounts</b></li>
-
               <li class="breadcrumb-item active" aria-current="page"><b>Trial Balance Summary</b></li>
-
-
-
             </ol>
-
           </nav>
-
           <hr class="hr_style" style="margin-Bottom:12px !important;">
-
         </div>
-
       </div>
-
       <div class="row ">
-
         <div class="col-md-5">
-
           <?php if (has_permission_new('trial_balance_summary', '', 'print')) {
-
           ?>
-
             <a class="btn btn-default" href="javascript:void(0);" style="margin-bottom: 20px;margin-left: 10px;" onclick="printPage();">Print</a>
             <button type="button" class="btn btn-success" id="exportTrialBalanceExcel" onclick="exportTrialBalanceToExcel()" style="margin-bottom: 20px;margin-left: 10px;">
                 <i class="fa fa-file-excel-o"></i>
                 Export Excel
             </button>
           <?php } ?>
-
         </div>
-
-
-
         <div class="col-md-10">
-
           <?php
-
           $fy = $this->session->userdata('finacial_year');
-
           $lastFy = $fy - 1;
-
           $fy_ = $fy + 1;
-
           $CurrYrFirstDate = '01/04/20' . $fy;
-
           $CurrYrLastDate = date('d/m/Y');
-
-
-
           $LastYrFirstDate = '01/04/20' . $lastFy;
-
           $LastYrLastDate = '31/03/20' . $fy;
-
           ?>
-
           <div id="tbLoadingBox" style="padding:15px 0;">
               <div style="display:flex; justify-content:space-between; margin-bottom:6px;">
                   <strong>Loading Trial Balance Summary...</strong>
                   <span id="tbProgressText">0%</span>
               </div>
-
               <div style="
                   width:100%;
                   height:8px;
@@ -107,68 +61,50 @@
                       transition:width 0.1s linear;
                   "></div>
               </div>
-
               <div id="tbProgressDetail" style="margin-top:6px; font-size:12px;">
                   Preparing data...
               </div>
           </div>
 
           <div class="page" id="DivIdToPrint">
-
             <div id="accordion">
-
               <div class="card">
-
                 <table class="tree">
-
                   <thead>
-
                     <tr class="tr_header">
-
                       <th>Particular</th>
-
                       <th colspan="6" class="text-center th_total">Transaction Details</th>
-
                     </tr>
-
                     <tr class="tr_header">
-
                       <th class="th_total"></th>
-
                       <th class="th_total">Opening Bal DR</th>
-
                       <th class="th_total">Opening Bal CR</th>
-
                       <th class="th_total">DebitAmt</th>
-
                       <th class="th_total">CreditAmt</th>
-
                       <th class="th_total">Closing Bal DR</th>
-
                       <th class="th_total">Closing Bal CR</th>
-
                     </tr>
-
                   </thead>
-
                   <tbody id="trialBalanceBody"></tbody>
-
+                  <tfoot>
+                    <tr class="tr_header">
+                      <th class="th_total">All Total</th>
+                      <th class="th_total" id="tfoot_opening_bal_dr">-</th>
+                      <th class="th_total" id="tfoot_opening_bal_cr">-</th>
+                      <th class="th_total" id="tfoot_debitamt">-</th>
+                      <th class="th_total" id="tfoot_creditamt">-</th>
+                      <th class="th_total" id="tfoot_closing_bal_dr">-</th>
+                      <th class="th_total" id="tfoot_closing_bal_cr">-</th>
+                    </tr>
+                  </tfoot>
                 </table>
-
               </div>
-
             </div>
-
           </div>
-
         </div>
-
       </div>
-
     </div>
-
   </div>
-
   
   <div class="modal fade" id="Inventory-modal">
 
@@ -1516,6 +1452,67 @@
         }
 
 
+        function calculateAndDisplayTotals() {
+
+            let totalDROpening = 0;
+            let totalCROpening = 0;
+            let totalDRTransaction = 0;
+            let totalCRTransaction = 0;
+            let totalDRClosing = 0;
+            let totalCRClosing = 0;
+
+
+            /*
+            * Traverse nested data and sum all account values
+            */
+            trialBalanceData.forEach(function (mainGroup) {
+
+                (mainGroup.SubGroups1 || []).forEach(function (group1) {
+
+                    (group1.SubGroups || []).forEach(function (group2) {
+
+                        (group2.Accounts || []).forEach(function (account) {
+
+                            totalDROpening += parseFloat(account.DROpeningAmt) || 0;
+                            totalCROpening += parseFloat(account.CROpeningAmt) || 0;
+                            totalDRTransaction += parseFloat(account.DRAmt) || 0;
+                            totalCRTransaction += parseFloat(account.CRAmt) || 0;
+                            totalDRClosing += parseFloat(account.DRClsAmt) || 0;
+                            totalCRClosing += parseFloat(account.CRClsAmt) || 0;
+
+                        });
+
+                    });
+
+                });
+
+            });
+
+
+            /*
+            * Update footer cells with calculated totals
+            */
+            document.getElementById('tfoot_opening_bal_dr').textContent = 
+                totalDROpening.toFixed(2);
+
+            document.getElementById('tfoot_opening_bal_cr').textContent = 
+                totalCROpening.toFixed(2);
+
+            document.getElementById('tfoot_debitamt').textContent = 
+                totalDRTransaction.toFixed(2);
+
+            document.getElementById('tfoot_creditamt').textContent = 
+                totalCRTransaction.toFixed(2);
+
+            document.getElementById('tfoot_closing_bal_dr').textContent = 
+                totalDRClosing.toFixed(2);
+
+            document.getElementById('tfoot_closing_bal_cr').textContent = 
+                totalCRClosing.toFixed(2);
+
+        }
+
+
         function appendChunk(startIndex) {
 
             /*
@@ -1609,6 +1606,11 @@
 
                     progressBox.style.display =
                         'none';
+
+                    /*
+                    * Calculate and display final totals
+                    */
+                    calculateAndDisplayTotals();
 
                 }, 700);
 

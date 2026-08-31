@@ -12090,29 +12090,15 @@ class Accounting extends AdminController
     // ============================================================
     // LOAD ALL REQUIRED DATA
     // ============================================================
-    $ActMainGroup =
-      $this->accounting_model->fetchAccountsData();
-    $ActSubGroup1 =
-      $this->accounting_model
-      ->GetActSubGroup1ByMainGroup($BalanceSheet_head);
-    $ActSubGroup2 =
-      $this->accounting_model
-      ->GetActSubGroup2ByMainGroup($BalanceSheet_head);
-    $AccountList =
-      $this->accounting_model
-      ->GetAccountListByMainGroup($BalanceSheet_head);
-    $StaffList =
-      $this->accounting_model
-      ->GetStaffList($BalanceSheet_head);
-    $ledger_data =
-      $this->accounting_model
-      ->GetLedgerData($BalanceSheet_head);
-    $staffledger_data =
-      $this->accounting_model
-      ->GetStaffLedgerData($BalanceSheet_head);
-    $opn_data =
-      $this->accounting_model
-      ->GetOpnBalData($BalanceSheet_head);
+    $ActMainGroup = $this->accounting_model->fetchAccountsData();
+    $ActSubGroup1 = $this->accounting_model->GetActSubGroup1ByMainGroup($BalanceSheet_head);
+    $ActSubGroup2 = $this->accounting_model->GetActSubGroup2ByMainGroup($BalanceSheet_head);
+    $AccountList = $this->accounting_model->GetAccountListByMainGroup($BalanceSheet_head);
+    $StaffList = $this->accounting_model->GetStaffList($BalanceSheet_head);
+    $ledger_data = $this->accounting_model->GetLedgerData($BalanceSheet_head);
+    $staffledger_data = $this->accounting_model->GetStaffLedgerData($BalanceSheet_head);
+    $opn_data = $this->accounting_model->GetOpnBalData($BalanceSheet_head);
+
     // ============================================================
     // PERFORMANCE OPTIMIZATION
     //
@@ -12192,34 +12178,27 @@ class Accounting extends AdminController
     // AND FY == current FY
     // ------------------------------------------------------------
     $openingByAccount = array();
-    if (
-      isset($opn_data->Cur_yr_OpnBal) &&
-      is_array($opn_data->Cur_yr_OpnBal)
-    ) {
+    if ( isset($opn_data->Cur_yr_OpnBal) && is_array($opn_data->Cur_yr_OpnBal) ) {
       foreach ($opn_data->Cur_yr_OpnBal as $row) {
         if (!isset($row['AccountID'])) {
           continue;
         }
 
         $rowFY = isset($row['FY']) ? $row['FY'] : '';
-        $lookupKey =
-          (string)$row['AccountID'] .
-          '|' .
-          (string)$rowFY;
+        $lookupKey = (string)$row['AccountID'] . '|' . (string)$rowFY;
         /*
-              * IMPORTANT:
-              *
-              * Original code overwrites the value if multiple matching
-              * rows exist because it keeps looping:
-              *
-              * $OpnActAmt = $Val45["SUMAmt"];
-              *
-              * Therefore use "=" here, not "+=".
-              *
-              * This preserves original behavior exactly.
-              */
-        $openingByAccount[$lookupKey] =
-          (float)$row['SUMAmt'];
+        * IMPORTANT:
+        *
+        * Original code overwrites the value if multiple matching
+        * rows exist because it keeps looping:
+        *
+        * $OpnActAmt = $Val45["SUMAmt"];
+        *
+        * Therefore use "=" here, not "+=".
+        *
+        * This preserves original behavior exactly.
+        */
+        $openingByAccount[$lookupKey] = (float)$row['SUMAmt'];
       }
     }
 
@@ -12229,29 +12208,19 @@ class Accounting extends AdminController
     // AccountID + FY + TType => SUMAmt
     // ------------------------------------------------------------
     $ledgerByAccount = array();
-    if (
-      isset($ledger_data->Cur_yr_ledger) &&
-      is_array($ledger_data->Cur_yr_ledger)
-    ) {
+    if ( isset($ledger_data->Cur_yr_ledger) && is_array($ledger_data->Cur_yr_ledger) ) {
       foreach ($ledger_data->Cur_yr_ledger as $row) {
-        if (
-          !isset($row['AccountID']) ||
-          !isset($row['TType'])
-        ) {
+        if ( !isset($row['AccountID']) || !isset($row['TType']) ) {
           continue;
         }
 
         $rowFY = isset($row['FY']) ? $row['FY'] : '';
-        $lookupKey =
-          (string)$row['AccountID'] .
-          '|' .
-          (string)$rowFY;
+        $lookupKey = (string)$row['AccountID'] . '|' . (string)$rowFY;
         /*
-              * Original code overwrites matching C/D values.
-              * Preserve that exact behavior.
-              */
-        $ledgerByAccount[$lookupKey][$row['TType']] =
-          (float)$row['SUMAmt'];
+        * Original code overwrites matching C/D values.
+        * Preserve that exact behavior.
+        */
+        $ledgerByAccount[$lookupKey][$row['TType']] = (float)$row['SUMAmt'];
       }
     }
 
@@ -12261,28 +12230,18 @@ class Accounting extends AdminController
     // AccountID + FY + TType => SUMAmt
     // ------------------------------------------------------------
     $staffLedgerByAccount = array();
-    if (
-      isset($staffledger_data->Cur_yr_ledger) &&
-      is_array($staffledger_data->Cur_yr_ledger)
-    ) {
+    if ( isset($staffledger_data->Cur_yr_ledger) && is_array($staffledger_data->Cur_yr_ledger) ) {
       foreach ($staffledger_data->Cur_yr_ledger as $row) {
-        if (
-          !isset($row['AccountID']) ||
-          !isset($row['TType'])
-        ) {
+        if ( !isset($row['AccountID']) || !isset($row['TType']) ) {
           continue;
         }
 
         $rowFY = isset($row['FY']) ? $row['FY'] : '';
-        $lookupKey =
-          (string)$row['AccountID'] .
-          '|' .
-          (string)$rowFY;
+        $lookupKey = (string)$row['AccountID'] . '|' . (string)$rowFY;
         /*
-              * Preserve original overwrite behavior.
-              */
-        $staffLedgerByAccount[$lookupKey][$row['TType']] =
-          (float)$row['SUMAmt'];
+        * Preserve original overwrite behavior.
+        */
+        $staffLedgerByAccount[$lookupKey][$row['TType']] = (float)$row['SUMAmt'];
       }
     }
 
@@ -12308,17 +12267,13 @@ class Accounting extends AdminController
       $DrClsBalMainGrpWise = 0;
       $CrClsBalMainGrpWise = 0;
       $mainGroupData = array(
-        'MainGroup' =>
-        $mainGroup['ActGroupName'],
+        'MainGroup' => $mainGroup['ActGroupName'],
         'SubGroups1' => array()
       );
 
       // Direct indexed subgroup lookup
       $mainGroupID = $mainGroup['ActGroupID'];
-      $group1Rows =
-        isset($subGroup1ByMain[$mainGroupID])
-        ? $subGroup1ByMain[$mainGroupID]
-        : array();
+      $group1Rows = isset($subGroup1ByMain[$mainGroupID]) ? $subGroup1ByMain[$mainGroupID] : array();
       // ========================================================
       // SUB GROUP 1 LOOP
       // ========================================================
@@ -12331,10 +12286,8 @@ class Accounting extends AdminController
         $DrClsBalSubGrp1Wise = 0;
         $CrClsBalSubGrp1Wise = 0;
         $subGroupData1 = array(
-          'SubGroup1Name' =>
-          $ActsubGrp1['SubActGroupName'],
-          'SubGroup1' =>
-          $ActsubGrp1['SubActGroupID1'],
+          'SubGroup1Name' => $ActsubGrp1['SubActGroupName'],
+          'SubGroup1' => $ActsubGrp1['SubActGroupID1'],
           'SubGroups' => array()
         );
 
@@ -12356,23 +12309,17 @@ class Accounting extends AdminController
           $CrOpnSubGrp2Amt = 0;
           $DrClsBalSubGrp2Wise = 0;
           $CrClsBalSubGrp2Wise = 0;
-          $group2ID =
-            $ActsubGrp2['SubActGroupID'];
+          $group2ID = $ActsubGrp2['SubActGroupID'];
           $subGroupData = array(
-            'SubGroupName' =>
-            $ActsubGrp2['SubActGroupName'],
-            'SubActGroupID' =>
-            $group2ID,
+            'SubGroupName' => $ActsubGrp2['SubActGroupName'],
+            'SubActGroupID' => $group2ID,
             'Accounts' => array()
           );
 
           // =================================================
           // CLIENT ACCOUNTS
           // =================================================
-          $groupAccounts =
-            isset($accountsByGroup2[$group2ID])
-            ? $accountsByGroup2[$group2ID]
-            : array();
+          $groupAccounts = isset($accountsByGroup2[$group2ID]) ? $accountsByGroup2[$group2ID] : array();
           foreach ($groupAccounts as $ActList) {
             $ClsBalAccountWise = 0;
             $crActAmt = 0;
@@ -12381,52 +12328,33 @@ class Accounting extends AdminController
             $CrOpnActAmt = 0;
             $DrClsBalAccountWise = 0;
             $CrClsBalAccountWise = 0;
-            $accountID =
-              $ActList['AccountID'];
-            $lookupKey =
-              (string)$accountID .
-              '|' .
-              (string)$fy;
+            $accountID = $ActList['AccountID'];
+            $lookupKey = (string)$accountID .'|' .(string)$fy;
             // =============================================
             // OPENING BALANCE
             // Original sign logic preserved
             // =============================================
-            $OpnActAmt =
-              isset($openingByAccount[$lookupKey])
-              ? $openingByAccount[$lookupKey]
-              : 0;
+            $OpnActAmt = isset($openingByAccount[$lookupKey]) ? $openingByAccount[$lookupKey] : 0;
             if ($OpnActAmt > 0) {
               $DrOpnActAmt = $OpnActAmt;
               $CrOpnActAmt = 0;
-              $DrOpnSubGrp2Amt +=
-                $DrOpnActAmt;
+              $DrOpnSubGrp2Amt += $DrOpnActAmt;
             } else {
               $CrOpnActAmt = $OpnActAmt;
               $DrOpnActAmt = 0;
-              $CrOpnSubGrp2Amt +=
-                $CrOpnActAmt;
+              $CrOpnSubGrp2Amt += $CrOpnActAmt;
             }
 
             // =============================================
             // TRANSACTION DATA
             // Direct indexed lookup
             // =============================================
-            if (
-              isset(
-                $ledgerByAccount[$lookupKey]['C']
-              )
-            ) {
-              $crActAmt =
-                $ledgerByAccount[$lookupKey]['C'];
+            if (isset($ledgerByAccount[$lookupKey]['C'])) {
+              $crActAmt = $ledgerByAccount[$lookupKey]['C'];
             }
 
-            if (
-              isset(
-                $ledgerByAccount[$lookupKey]['D']
-              )
-            ) {
-              $drActAmt =
-                $ledgerByAccount[$lookupKey]['D'];
+            if (isset($ledgerByAccount[$lookupKey]['D'])) {
+              $drActAmt = $ledgerByAccount[$lookupKey]['D'];
             }
 
             // Original subgroup transaction totals
@@ -12437,78 +12365,49 @@ class Accounting extends AdminController
             // ORIGINAL CALCULATION PRESERVED EXACTLY
             // =============================================
             if ($i > 1) {
-              $ClsBalAccountWise =
-                $CrOpnActAmt +
-                $DrOpnActAmt +
-                $drActAmt -
-                $crActAmt;
+              $ClsBalAccountWise = $CrOpnActAmt + $DrOpnActAmt + $drActAmt - $crActAmt;
             } else {
-              $ClsBalAccountWise =
-                $CrOpnActAmt +
-                $DrOpnActAmt +
-                $crActAmt -
-                $drActAmt;
+              $ClsBalAccountWise = $CrOpnActAmt + $DrOpnActAmt + $crActAmt - $drActAmt;
             }
 
             // =============================================
             // SPLIT CLOSING BALANCE
             // =============================================
             if ($ClsBalAccountWise < 0) {
-              $DrClsBalAccountWise =
-                $ClsBalAccountWise;
+              $DrClsBalAccountWise = $ClsBalAccountWise;
               $CrClsBalAccountWise = 0;
-              $DrClsBalSubGrp2Wise +=
-                $DrClsBalAccountWise;
+              $DrClsBalSubGrp2Wise += $DrClsBalAccountWise;
             } else {
-              $CrClsBalAccountWise =
-                $ClsBalAccountWise;
+              $CrClsBalAccountWise = $ClsBalAccountWise;
               $DrClsBalAccountWise = 0;
-              $CrClsBalSubGrp2Wise +=
-                $CrClsBalAccountWise;
+              $CrClsBalSubGrp2Wise += $CrClsBalAccountWise;
             }
 
             // =============================================
             // ADD NON-ZERO ACCOUNT ONLY
             // =============================================
-            if (
-              $CrOpnActAmt == "0" &&
-              $DrOpnActAmt == "0" &&
-              $drActAmt == "0" &&
-              $crActAmt == "0"
-            ) {
+            if ( $CrOpnActAmt == "0" && $DrOpnActAmt == "0" && $drActAmt == "0" && $crActAmt == "0" ) {
               // Keep original skip behavior
             } else {
               $AccountData = array(
-                'AccountName' =>
-                $ActList['company'],
-                'AccountID' =>
-                $accountID,
-                'CROpeningAmt' =>
-                abs($CrOpnActAmt),
-                'DROpeningAmt' =>
-                abs($DrOpnActAmt),
-                'CRAmt' =>
-                $crActAmt,
-                'DRAmt' =>
-                $drActAmt,
-                'DRClsAmt' =>
-                abs($DrClsBalAccountWise),
-                'CRClsAmt' =>
-                abs($CrClsBalAccountWise)
+                'AccountName' => $ActList['company'],
+                'AccountID' => $accountID,
+                'CROpeningAmt' => abs($CrOpnActAmt),
+                'DROpeningAmt' => abs($DrOpnActAmt),
+                'CRAmt' => $crActAmt,
+                'DRAmt' => $drActAmt,
+                'DRClsAmt' => abs($DrClsBalAccountWise),
+                'CRClsAmt' => abs($CrClsBalAccountWise)
               );
 
-              $subGroupData['Accounts'][] =
-                $AccountData;
+              $subGroupData['Accounts'][] = $AccountData;
             }
           }
 
           // =================================================
           // STAFF ACCOUNTS
           // =================================================
-          $groupStaff =
-            isset($staffByGroup2[$group2ID])
-            ? $staffByGroup2[$group2ID]
-            : array();
+          $groupStaff = isset($staffByGroup2[$group2ID]) ? $staffByGroup2[$group2ID] : array();
           foreach ($groupStaff as $staffList) {
             $ClsBalAccountWise = 0;
             $crActAmt = 0;
@@ -12517,54 +12416,33 @@ class Accounting extends AdminController
             $CrOpnActAmt = 0;
             $DrClsBalAccountWise = 0;
             $CrClsBalAccountWise = 0;
-            $accountID =
-              $staffList['AccountID'];
-            $lookupKey =
-              (string)$accountID .
-              '|' .
-              (string)$fy;
+            $accountID = $staffList['AccountID'];
+            $lookupKey = (string)$accountID . '|' . (string)$fy;
             // =============================================
             // OPENING BALANCE
             // Original sign logic preserved
             // =============================================
-            $OpnActAmt =
-              isset($openingByAccount[$lookupKey])
-              ? $openingByAccount[$lookupKey]
-              : 0;
+            $OpnActAmt = isset($openingByAccount[$lookupKey]) ? $openingByAccount[$lookupKey] : 0;
             if ($OpnActAmt > 0) {
-              $DrOpnActAmt =
-                $OpnActAmt;
+              $DrOpnActAmt = $OpnActAmt;
               $CrOpnActAmt = 0;
-              $DrOpnSubGrp2Amt +=
-                $DrOpnActAmt;
+              $DrOpnSubGrp2Amt += $DrOpnActAmt;
             } else {
-              $CrOpnActAmt =
-                $OpnActAmt;
+              $CrOpnActAmt = $OpnActAmt;
               $DrOpnActAmt = 0;
-              $CrOpnSubGrp2Amt +=
-                $CrOpnActAmt;
+              $CrOpnSubGrp2Amt += $CrOpnActAmt;
             }
 
             // =============================================
             // STAFF TRANSACTION DATA
             // Direct indexed lookup
             // =============================================
-            if (
-              isset(
-                $staffLedgerByAccount[$lookupKey]['C']
-              )
-            ) {
-              $crActAmt =
-                $staffLedgerByAccount[$lookupKey]['C'];
+            if (isset($staffLedgerByAccount[$lookupKey]['C'])) {
+              $crActAmt = $staffLedgerByAccount[$lookupKey]['C'];
             }
 
-            if (
-              isset(
-                $staffLedgerByAccount[$lookupKey]['D']
-              )
-            ) {
-              $drActAmt =
-                $staffLedgerByAccount[$lookupKey]['D'];
+            if (isset($staffLedgerByAccount[$lookupKey]['D'])) {
+              $drActAmt = $staffLedgerByAccount[$lookupKey]['D'];
             }
 
             $crSubGrp2Amt += $crActAmt;
@@ -12574,17 +12452,9 @@ class Accounting extends AdminController
             // ORIGINAL CALCULATION PRESERVED EXACTLY
             // =============================================
             if ($i > 1) {
-              $ClsBalAccountWise =
-                $CrOpnActAmt +
-                $DrOpnActAmt +
-                $drActAmt -
-                $crActAmt;
+              $ClsBalAccountWise = $CrOpnActAmt + $DrOpnActAmt + $drActAmt - $crActAmt;
             } else {
-              $ClsBalAccountWise =
-                $CrOpnActAmt +
-                $DrOpnActAmt +
-                $crActAmt -
-                $drActAmt;
+              $ClsBalAccountWise = $CrOpnActAmt + $DrOpnActAmt + $crActAmt - $drActAmt;
             }
 
             // =============================================
@@ -12606,171 +12476,100 @@ class Accounting extends AdminController
                           * $DrClsBalAccountWise +=
                           *     $CrClsBalAccountWise;
                           */
-              $DrClsBalAccountWise +=
-                $CrClsBalAccountWise;
+              $DrClsBalAccountWise += $CrClsBalAccountWise;
             } else {
-              $CrClsBalAccountWise =
-                $ClsBalAccountWise;
+              $CrClsBalAccountWise = $ClsBalAccountWise;
               $DrClsBalAccountWise = 0;
-              $CrClsBalSubGrp2Wise +=
-                $CrClsBalAccountWise;
+              $CrClsBalSubGrp2Wise += $CrClsBalAccountWise;
             }
 
             // =============================================
             // ADD NON-ZERO STAFF ACCOUNT
             // =============================================
-            if (
-              $CrOpnActAmt == "0" &&
-              $DrOpnActAmt == "0" &&
-              $drActAmt == "0" &&
-              $crActAmt == "0"
-            ) {
+            if ( $CrOpnActAmt == "0" && $DrOpnActAmt == "0" && $drActAmt == "0" && $crActAmt == "0" ) {
               // Keep original skip behavior
             } else {
               $AccountData = array(
-                'AccountName' =>
-                $staffList['firstname'] .
-                  ' ' .
-                  $staffList['lastname'],
-                'AccountID' =>
-                $accountID,
-                /*
-                              * Preserve original staff output:
-                              * No abs() on opening amounts.
-                              */
-                'CROpeningAmt' =>
-                $CrOpnActAmt,
-                'DROpeningAmt' =>
-                $DrOpnActAmt,
-                'CRAmt' =>
-                $crActAmt,
-                'DRAmt' =>
-                $drActAmt,
-                'DRClsAmt' =>
-                abs($DrClsBalAccountWise),
-                'CRClsAmt' =>
-                abs($CrClsBalAccountWise)
+                'AccountName' => $staffList['firstname'] . ' ' . $staffList['lastname'],
+                'AccountID' => $accountID,
+                'CROpeningAmt' => $CrOpnActAmt,
+                'DROpeningAmt' => $DrOpnActAmt,
+                'CRAmt' => $crActAmt,
+                'DRAmt' => $drActAmt,
+                'DRClsAmt' => abs($DrClsBalAccountWise),
+                'CRClsAmt' => abs($CrClsBalAccountWise)
               );
 
-              $subGroupData['Accounts'][] =
-                $AccountData;
+              $subGroupData['Accounts'][] = $AccountData;
             }
           }
 
           // =================================================
           // SUB GROUP 2 TOTALS
           // =================================================
-          $subGroupData['CROpeningAmt'] =
-            abs($CrOpnSubGrp2Amt);
-          $subGroupData['DROpeningAmt'] =
-            abs($DrOpnSubGrp2Amt);
-          $subGroupData['CRAmt'] =
-            $crSubGrp2Amt;
-          $subGroupData['DRAmt'] =
-            $drSubGrp2Amt;
-          $subGroupData['DRClsAmt'] =
-            abs($DrClsBalSubGrp2Wise);
-          $subGroupData['CRClsAmt'] =
-            abs($CrClsBalSubGrp2Wise);
+          $subGroupData['CROpeningAmt'] = abs($CrOpnSubGrp2Amt);
+          $subGroupData['DROpeningAmt'] = abs($DrOpnSubGrp2Amt);
+          $subGroupData['CRAmt'] = $crSubGrp2Amt;
+          $subGroupData['DRAmt'] = $drSubGrp2Amt;
+          $subGroupData['DRClsAmt'] = abs($DrClsBalSubGrp2Wise);
+          $subGroupData['CRClsAmt'] = abs($CrClsBalSubGrp2Wise);
           // =================================================
           // ADD NON-ZERO SUB GROUP 2
           // =================================================
-          if (
-            $CrOpnSubGrp2Amt == "0" &&
-            $DrOpnSubGrp2Amt == "0" &&
-            $crSubGrp2Amt == "0" &&
-            $drSubGrp2Amt == "0"
-          ) {
+          if ( $CrOpnSubGrp2Amt == "0" && $DrOpnSubGrp2Amt == "0" && $crSubGrp2Amt == "0" && $drSubGrp2Amt == "0" ) {
             // Keep original skip behavior
           } else {
-            $CrOpnSubGrp1Amt +=
-              $CrOpnSubGrp2Amt;
-            $DrOpnSubGrp1Amt +=
-              $DrOpnSubGrp2Amt;
-            $crSubGrp1Amt +=
-              $crSubGrp2Amt;
-            $drSubGrp1Amt +=
-              $drSubGrp2Amt;
-            $DrClsBalSubGrp1Wise +=
-              $DrClsBalSubGrp2Wise;
-            $CrClsBalSubGrp1Wise +=
-              $CrClsBalSubGrp2Wise;
-            $subGroupData1['SubGroups'][] =
-              $subGroupData;
+            $CrOpnSubGrp1Amt += $CrOpnSubGrp2Amt;
+            $DrOpnSubGrp1Amt += $DrOpnSubGrp2Amt;
+            $crSubGrp1Amt += $crSubGrp2Amt;
+            $drSubGrp1Amt += $drSubGrp2Amt;
+            $DrClsBalSubGrp1Wise += $DrClsBalSubGrp2Wise;
+            $CrClsBalSubGrp1Wise += $CrClsBalSubGrp2Wise;
+            $subGroupData1['SubGroups'][] = $subGroupData;
           }
         }
 
         // ====================================================
         // SUB GROUP 1 TOTALS
         // ====================================================
-        $subGroupData1['CROpeningAmt'] =
-          abs($CrOpnSubGrp1Amt);
-        $subGroupData1['DROpeningAmt'] =
-          abs($DrOpnSubGrp1Amt);
-        $subGroupData1['CRAmt'] =
-          $crSubGrp1Amt;
-        $subGroupData1['DRAmt'] =
-          $drSubGrp1Amt;
-        $subGroupData1['DRClsAmt'] =
-          abs($DrClsBalSubGrp1Wise);
-        $subGroupData1['CRClsAmt'] =
-          abs($CrClsBalSubGrp1Wise);
+        $subGroupData1['CROpeningAmt'] = abs($CrOpnSubGrp1Amt);
+        $subGroupData1['DROpeningAmt'] = abs($DrOpnSubGrp1Amt);
+        $subGroupData1['CRAmt'] = $crSubGrp1Amt;
+        $subGroupData1['DRAmt'] = $drSubGrp1Amt;
+        $subGroupData1['DRClsAmt'] = abs($DrClsBalSubGrp1Wise);
+        $subGroupData1['CRClsAmt'] = abs($CrClsBalSubGrp1Wise);
         // ====================================================
         // ADD NON-ZERO SUB GROUP 1
         // ====================================================
-        if (
-          $CrOpnSubGrp1Amt == "0" &&
-          $DrOpnSubGrp1Amt == "0" &&
-          $crSubGrp1Amt == "0" &&
-          $drSubGrp1Amt == "0"
-        ) {
+        if ( $CrOpnSubGrp1Amt == "0" && $DrOpnSubGrp1Amt == "0" && $crSubGrp1Amt == "0" && $drSubGrp1Amt == "0" ) {
           // Keep original skip behavior
         } else {
-          $CrOpnMainGrpAmt +=
-            $CrOpnSubGrp1Amt;
-          $DrOpnMainGrpAmt +=
-            $DrOpnSubGrp1Amt;
-          $crMainGrpAmt +=
-            $crSubGrp1Amt;
-          $drMainGrpAmt +=
-            $drSubGrp1Amt;
-          $DrClsBalMainGrpWise +=
-            $DrClsBalSubGrp1Wise;
-          $CrClsBalMainGrpWise +=
-            $CrClsBalSubGrp1Wise;
-          $mainGroupData['SubGroups1'][] =
-            $subGroupData1;
+          $CrOpnMainGrpAmt += $CrOpnSubGrp1Amt;
+          $DrOpnMainGrpAmt += $DrOpnSubGrp1Amt;
+          $crMainGrpAmt += $crSubGrp1Amt;
+          $drMainGrpAmt += $drSubGrp1Amt;
+          $DrClsBalMainGrpWise += $DrClsBalSubGrp1Wise;
+          $CrClsBalMainGrpWise += $CrClsBalSubGrp1Wise;
+          $mainGroupData['SubGroups1'][] = $subGroupData1;
         }
       }
 
       // ========================================================
       // ADD NON-ZERO MAIN GROUP
       // ========================================================
-      if (
-        $CrOpnMainGrpAmt == "0" &&
-        $DrOpnMainGrpAmt == "0" &&
-        $crMainGrpAmt == "0" &&
-        $drMainGrpAmt == "0"
-      ) {
+      if ( $CrOpnMainGrpAmt == "0" && $DrOpnMainGrpAmt == "0" && $crMainGrpAmt == "0" && $drMainGrpAmt == "0" ) {
         // Keep original skip behavior
       } else {
-        $mainGroupData['CROpeningAmt'] =
-          abs($CrOpnMainGrpAmt);
-        $mainGroupData['DROpeningAmt'] =
-          abs($DrOpnMainGrpAmt);
-        $mainGroupData['CRAmt'] =
-          $crMainGrpAmt;
-        $mainGroupData['DRAmt'] =
-          $drMainGrpAmt;
-        $mainGroupData['DRClsAmt'] =
-          abs($DrClsBalMainGrpWise);
-        $mainGroupData['CRClsAmt'] =
-          abs($CrClsBalMainGrpWise);
-        $nestedData[] =
-          $mainGroupData;
+        $mainGroupData['CROpeningAmt'] = abs($CrOpnMainGrpAmt);
+        $mainGroupData['DROpeningAmt'] = abs($DrOpnMainGrpAmt);
+        $mainGroupData['CRAmt'] = $crMainGrpAmt;
+        $mainGroupData['DRAmt'] = $drMainGrpAmt;
+        $mainGroupData['DRClsAmt'] = abs($DrClsBalMainGrpWise);
+        $mainGroupData['CRClsAmt'] = abs($CrClsBalMainGrpWise);
+        $nestedData[] = $mainGroupData;
         /*
-              * Keep increment position exactly as original.
-              */
+        * Keep increment position exactly as original.
+        */
         $i++;
       }
     }

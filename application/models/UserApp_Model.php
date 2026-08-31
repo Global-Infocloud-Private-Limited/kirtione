@@ -20,7 +20,7 @@ class UserApp_Model extends App_Model
      * @param  boolean Is Staff Or Client
      * @return boolean if not redirect url found, if found redirect to the url
      */
-    public function login($mobile, $password, $staff,$DeviceID)
+    public function login($mobile, $password, $staff, $DeviceID, $fcm_token)
     {
          
         if ((!empty($mobile)) and (!empty($password))) {
@@ -28,87 +28,86 @@ class UserApp_Model extends App_Model
                 $table = db_prefix() . 'staff';
             }
             $this->db->select('tblstaff.*,tblhr_job_position.position_name,tblroles.name As RoleName');
-             $this->db->where('phonenumber', $mobile);
-             $this->db->join(db_prefix() . 'hr_job_position', db_prefix() . 'hr_job_position.position_id = '.db_prefix() . 'staff.job_position',"LEFT");
-             $this->db->join(db_prefix() . 'roles', db_prefix() . 'roles.roleid = '.db_prefix() . 'staff.role',"LEFT");
+            $this->db->where('phonenumber', $mobile);
+            $this->db->join(db_prefix() . 'hr_job_position', db_prefix() . 'hr_job_position.position_id = '.db_prefix() . 'staff.job_position',"LEFT");
+            $this->db->join(db_prefix() . 'roles', db_prefix() . 'roles.roleid = '.db_prefix() . 'staff.role',"LEFT");
             $user = $this->db->get($table)->row();
             if ($user) {
                 // Email is okey lets check the password now
                 if (!app_hasher()->CheckPassword($password, $user->password)) {
-                        $response=array("status"=>false,"message"=>"You have Enter Wrong Password","user_data"=>null);
-                        return $response;
+                    $response=array("status"=>false,"message"=>"You have Enter Wrong Password","user_data"=>null);
+                    return $response;
                 } else {
-                     if ($user->active == 0) {
-                            $response=array("status"=>false,"message"=>"Your Account InActive","user_data"=>null);
-                            return $response;
-                     } else{
-                            if($user->app_access == "Yes")
-                                { 
-                                    
-                                    if($user->DeviceID == null || $user->DeviceID == '' || $mobile == "9860116842"){
-    									$DeviceID_array = array(
-                                            "DeviceID"=>$DeviceID
-    									);
-    									$this->db->set($DeviceID_array);
-    									$this->db->where("staffid", $user->staffid);
-    									$this->db->update($table);
-    									$DivID = $DeviceID;
-    								}else{
-    									$DivID = $user->DeviceID;
-    								}
-    								if($DivID == $DeviceID){
-    								    $state_id = $user->state;
-                                        $table2 = db_prefix() . 'xx_statelist';
-                                        $this->db->where('id', $state_id);
-                                        $state_data = $this->db->get($table2)->row();
-                                        
-                                        $city_id = $user->city;
-                                        $table3 = db_prefix() . 'xx_citylist';
-                                        $this->db->where('id', $city_id);
-                                        $city_data = $this->db->get($table3)->row();
-                                        
-                                        // Get Department
-                                        $this->db->select(db_prefix() . 'staff_departments.departmentid AS DeptID,'.db_prefix() . 'staff_departments.staffid AS StaffID,'.db_prefix() . 'departments.name');
-                                        $this->db->from(db_prefix() . 'staff_departments');
-                                        $this->db->join(db_prefix() . 'departments', db_prefix() . 'departments.departmentid = '.db_prefix() . 'staff_departments.departmentid');
-    	                                $this->db->where(db_prefix() . 'staff_departments.staffid', $user->staffid);
-                                        $Departments = $this->db->get()->result_array();
-                                        
-                                        $token = bin2hex(random_bytes(16));
-                                        $this->db->where('staffid', $user->staffid);
-                                        $this->db->set('login_tokan',$token);
-                                        $this->db->update('tblstaff');
-                                        
-                                        $user_data=array(
-                                            "userId"=> $user->staffid,
-                                            "name"=> $user->firstname.' '.$user->lastname,
-                                            "email"=> $user->email,
-                                            "mobile"=> $user->phonenumber,
-                                            "state"=> $state_data->state_name,
-                                            "city"=> $city_data->city_name,
-                                            "status"=> "Active",
-                                            "SubActGroupID"=> $user->SubActGroupID,
-                                            "admin"=> $user->admin,
-                                            "app_access"=> $user->app_access,
-                                            "DeptData" => $Departments,
-                                            "job_position" => $user->job_position,
-                                            "job_position_name" => $user->position_name,
-                                            "login_tokan" => $token,
-                                            'role_id'=>$user->role,
-                                            'role_name'=>$user->RoleName
-                                        );
-                                        $response=array("status"=>true,"message"=>"You have logged in successfully","user_data"=>$user_data);
-                                        return $response;
-    								}else{
-    								    $response=array("status"=>false,"message"=>"Your device is not registered. Please contact to admin.","user_data"=>null);
-									    return $response;
-    								}
-                                }else {
-                                    $response=array("status"=>false,"message"=>"You are Not Authirized to Login Hare..!","user_data"=>null);
-                                    return $response;
-                                }
+                    if ($user->active == 0) {
+                        $response=array("status"=>false,"message"=>"Your Account InActive","user_data"=>null);
+                        return $response;
+                    } else{
+                        if($user->app_access == "Yes"){ 
+                            if($user->DeviceID == null || $user->DeviceID == '' || $mobile == "9860116842"){
+                                $DeviceID_array = array(
+                                    "DeviceID"=>$DeviceID
+                                );
+                                $this->db->set($DeviceID_array);
+                                $this->db->where("staffid", $user->staffid);
+                                $this->db->update($table);
+                                $DivID = $DeviceID;
+                            }else{
+                                $DivID = $user->DeviceID;
                             }
+                            if($DivID == $DeviceID){
+                                $state_id = $user->state;
+                                $table2 = db_prefix() . 'xx_statelist';
+                                $this->db->where('id', $state_id);
+                                $state_data = $this->db->get($table2)->row();
+                                
+                                $city_id = $user->city;
+                                $table3 = db_prefix() . 'xx_citylist';
+                                $this->db->where('id', $city_id);
+                                $city_data = $this->db->get($table3)->row();
+                                
+                                // Get Department
+                                $this->db->select(db_prefix() . 'staff_departments.departmentid AS DeptID,'.db_prefix() . 'staff_departments.staffid AS StaffID,'.db_prefix() . 'departments.name');
+                                $this->db->from(db_prefix() . 'staff_departments');
+                                $this->db->join(db_prefix() . 'departments', db_prefix() . 'departments.departmentid = '.db_prefix() . 'staff_departments.departmentid');
+                                $this->db->where(db_prefix() . 'staff_departments.staffid', $user->staffid);
+                                $Departments = $this->db->get()->result_array();
+                                
+                                $token = bin2hex(random_bytes(16));
+                                $this->db->where('staffid', $user->staffid);
+                                $this->db->set(['login_tokan' => $token, 'fcm_token' => $fcm_token]);
+                                $this->db->update('tblstaff');
+                                
+                                $user_data=array(
+                                    "userId"    => $user->staffid,
+                                    "name"      => $user->firstname.' '.$user->lastname,
+                                    "email"     => $user->email,
+                                    "mobile"    => $user->phonenumber,
+                                    "state"     => $state_data->state_name,
+                                    "city"      => $city_data->city_name,
+                                    "status"    => "Active",
+                                    "SubActGroupID" => $user->SubActGroupID,
+                                    "admin"     => $user->admin,
+                                    "app_access"=> $user->app_access,
+                                    "DeptData"  => $Departments,
+                                    "job_position"  => $user->job_position,
+                                    "job_position_name" => $user->position_name,
+                                    "login_tokan"   => $token,
+                                    "fcm_token"     => $fcm_token,
+                                    'role_id'   =>$user->role,
+                                    'role_name' =>$user->RoleName
+                                );
+                                $response=array("status"=>true,"message"=>"You have logged in successfully","user_data"=>$user_data);
+                                return $response;
+                            }else{
+                                $response=array("status"=>false,"message"=>"Your device is not registered. Please contact to admin.","user_data"=>null);
+                                return $response;
+                            }
+                        }else {
+                            $response=array("status"=>false,"message"=>"You are Not Authirized to Login Hare..!","user_data"=>null);
+                            return $response;
                         }
+                    }
+                }
             } else {
                 $response=array("status"=>false,"message"=>"You have Enter wrong details.","user_data"=>null);
                 return $response;

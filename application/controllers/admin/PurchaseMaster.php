@@ -2101,18 +2101,19 @@
 		if($poId !="")
 		{
 			$where = '(PurchID="'.$poId.'")';
-			$orderDetails = $this->PurchaseModel->get_data($tablename="tblK1purchasemaster",$where);
+			$orderDetails = $this->PurchaseModel->get_data($tablename="tblK1PurchaseOrderMaster",$where);
 			$updateOrderData = array(
-			'OrderStatus'=>"C",
-            'Purchamt'=>'0.00',
-            'Discamt'=>'0.00',
-			'cgstamt'=>'0.00',
-			'sgstamt'=>'0.00',
-            'igstamt'=>'0.00',
-			'RoundOffAmt'=>'0.00',
-			'Invamt'=>'0.00',
-			'ItCount'=>'0'
+				'OrderStatus'=>"C",
+				'Purchamt'=>'0.00',
+				'Discamt'=>'0.00',
+				'cgstamt'=>'0.00',
+				'sgstamt'=>'0.00',
+				'igstamt'=>'0.00',
+				'RoundOffAmt'=>'0.00',
+				'Invamt'=>'0.00',
+				'ItCount'=>'0'
 			);
+			$cancelOrder = $this->PurchaseModel->edit_data($tablename="tblK1PurchaseOrderMaster",$where,$updateOrderData);
 			$cancelOrder = $this->PurchaseModel->edit_data($tablename="tblK1purchasemaster",$where,$updateOrderData);
 			$wh = '(OrderID="'.$poId.'")';
 			$updateItemData = array(
