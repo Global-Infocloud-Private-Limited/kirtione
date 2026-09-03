@@ -367,7 +367,7 @@ class Cron extends App_Controller
 					}
 
 					if(!empty($Batch['FCM_Token']) && $Batch['FCM_Token'] != null){
-						$this->send_notification('Stock Alert', '1', $description, '', $Batch['FCM_Token']);
+						$this->send_notifications('Stock Alert', '1', $description, '', $Batch['FCM_Token']);
 					}
 
           $FinalData[] = [
@@ -388,41 +388,149 @@ class Cron extends App_Controller
       }
     }
 
-    function send_notification($title,$screen,$body,$booking_id,$to)
-    {
-        $data_arrary = array(
-            "title"=>$title,
-            "screen"=>$screen,
-            "body"=>$body,
-            "booking_id"=>$booking_id
-        );
-        $post_data = array(
-            "priority"=>"HIGH",
-            "data"=>$data_arrary,
-            "to"=>$to
-        );
-        $finel_data = json_encode($post_data);
+    // function send_notification($title,$screen,$body,$booking_id,$to)
+    // {
+    //     $data_arrary = array(
+    //         "title"=>$title,
+    //         "screen"=>$screen,
+    //         "body"=>$body,
+    //         "booking_id"=>$booking_id
+    //     );
+    //     $post_data = array(
+    //         "priority"=>"HIGH",
+    //         "data"=>$data_arrary,
+    //         "to"=>$to
+    //     );
+    //     $finel_data = json_encode($post_data);
         
-        $curl = curl_init();
-        curl_setopt_array($curl, array(
-            CURLOPT_URL => "https://fcm.googleapis.com/fcm/send",
-            CURLOPT_RETURNTRANSFER => true,
-            CURLOPT_ENCODING => "",
-            CURLOPT_MAXREDIRS => 10,
-            CURLOPT_TIMEOUT => 30,
-            CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
-            CURLOPT_CUSTOMREQUEST => "POST",
-            CURLOPT_POSTFIELDS => $finel_data,
-            CURLOPT_HTTPHEADER => array(
-                    "authorization: key=AAAAy7QqWaM:APA91bFtzRBc-XbKW6CVNBYP20vVnfnNghf6tWrUN8YxJQJ3YXl8B0s8P5-aDC_O-B46PZ5srQVnHx8A0HgqQF0ZIq29kTJKrk9KKvhREuB5oHrmfc0nPsUXf58qPVkHxMUDVU5Vjb4K",
-                    "content-type: application/json"
-                ),
-            )
-        );
-        $response = curl_exec($curl);
-        $err = curl_error($curl);
-        curl_close($curl);
-       // return $response;
+    //     $curl = curl_init();
+    //     curl_setopt_array($curl, array(
+    //         CURLOPT_URL => "https://fcm.googleapis.com/fcm/send",
+    //         CURLOPT_RETURNTRANSFER => true,
+    //         CURLOPT_ENCODING => "",
+    //         CURLOPT_MAXREDIRS => 10,
+    //         CURLOPT_TIMEOUT => 30,
+    //         CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
+    //         CURLOPT_CUSTOMREQUEST => "POST",
+    //         CURLOPT_POSTFIELDS => $finel_data,
+    //         CURLOPT_HTTPHEADER => array(
+    //                 "authorization: key=AAAAy7QqWaM:APA91bFtzRBc-XbKW6CVNBYP20vVnfnNghf6tWrUN8YxJQJ3YXl8B0s8P5-aDC_O-B46PZ5srQVnHx8A0HgqQF0ZIq29kTJKrk9KKvhREuB5oHrmfc0nPsUXf58qPVkHxMUDVU5Vjb4K",
+    //                 "content-type: application/json"
+    //             ),
+    //         )
+    //     );
+    //     $response = curl_exec($curl);
+    //     $err = curl_error($curl);
+    //     curl_close($curl);
+    //    // return $response;
         
+    // }
+
+    public function send_notifications($title, $screen, $body, $booking_id='', $to) {
+        
+        // header('Access-Control-Allow-Origin: *');
+        // header('Access-Control-Allow-Methods: GET, POST, OPTIONS');
+        // header('Access-Control-Allow-Headers: Content-Type, Authorization, X-Requested-With');
+        // header('Content-Type: application/json');
+
+        // if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
+        //     http_response_code(200);
+        //     exit;
+        // }
+        
+        // 1. Define the path to your service account JSON file
+        $jsonPath = APPPATH . 'config/service-account.json';
+
+        if (!file_exists($jsonPath)) {
+            log_message('error', 'FCM: Service account file not found.');
+            return;
+        }
+
+        // 2. Fetch the Access Token
+        $accessToken = $this->get_fcm_access_token($jsonPath);
+
+        if (!$accessToken) {
+            log_message('error', 'FCM: Failed to generate Access Token.');
+            return;
+        }
+
+        // 3. Read your project_id dynamically from the JSON file
+        $serviceAccount = json_decode(file_get_contents($jsonPath), true);
+        $projectId = $serviceAccount['project_id'];
+
+        // 4. Send notification via FCM v1 HTTP API
+        $url = "https://fcm.googleapis.com/v1/projects/{$projectId}/messages:send";
+
+        $payload = [
+            'message' => [
+                'token' => $to, // Replace with receiver token
+                'notification' => [
+                    'title' => $title,
+                    'body'  => $body
+                ]
+            ]
+        ];
+
+        $ch = curl_init($url);
+        curl_setopt_array($ch, [
+            CURLOPT_POST           => true,
+            CURLOPT_HTTPHEADER     => [
+                'Authorization: Bearer ' . $accessToken,
+                'Content-Type: application/json'
+            ],
+            CURLOPT_POSTFIELDS     => json_encode($payload),
+            CURLOPT_RETURNTRANSFER => true
+        ]);
+
+        $response = curl_exec($ch);
+        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        curl_close($ch);
+
+        // echo "Status Code: " . $httpCode . "\n";
+        // echo "Response: " . $response;
+    }
+
+    /**
+     * Helper function to generate OAuth 2.0 Access Token from Service Account JSON
+     */
+    private function get_fcm_access_token($filePath) {
+        $jsonKey = json_decode(file_get_contents($filePath), true);
+
+        $header = json_encode(['alg' => 'RS256', 'typ' => 'JWT']);
+        $now = time();
+        $payload = json_encode([
+            'iss'   => $jsonKey['client_email'],
+            'scope' => 'https://www.googleapis.com/auth/firebase.messaging',
+            'aud'   => $jsonKey['token_uri'],
+            'exp'   => $now + 3600,
+            'iat'   => $now
+        ]);
+
+        // Base64Url Encoding
+        $base64UrlHeader = str_replace(['+', '/', '='], ['-', '_', ''], base64_encode($header));
+        $base64UrlPayload = str_replace(['+', '/', '='], ['-', '_', ''], base64_encode($payload));
+
+        // Sign JWT using Private Key from JSON
+        $signature = '';
+        openssl_sign($base64UrlHeader . "." . $base64UrlPayload, $signature, $jsonKey['private_key'], 'SHA256');
+        $base64UrlSignature = str_replace(['+', '/', '='], ['-', '_', ''], base64_encode($signature));
+
+        $jwt = $base64UrlHeader . "." . $base64UrlPayload . "." . $base64UrlSignature;
+
+        // Exchange JWT for OAuth2 Access Token
+        $ch = curl_init($jsonKey['token_uri']);
+        curl_setopt_array($ch, [
+            CURLOPT_POST           => true,
+            CURLOPT_POSTFIELDS     => http_build_query([
+                'grant_type' => 'urn:ietf:params:oauth:grant-type:jwt-bearer',
+                'assertion'  => $jwt
+            ]),
+            CURLOPT_RETURNTRANSFER => true
+        ]);
+
+        $res = json_decode(curl_exec($ch), true);
+        curl_close($ch);
+
+        return $res['access_token'] ?? null;
     }
 }

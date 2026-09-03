@@ -10419,8 +10419,8 @@ class UserApp_Controller extends ClientsController {
             // If the user is an admin, no need to filter by centers
         } else {    
             $centerslist = $this->db->select('*')
-                ->from(db_prefix() . 'Centerwise_staff_priority')
-                ->where('staff_id', $AccountID)
+                ->from(db_prefix() . 'staff_wise_center')
+                ->where('AccountID', $AccountID)
                 ->get()
                 ->result_array();
             $CenterID = array_column($centerslist, 'CenterID');
