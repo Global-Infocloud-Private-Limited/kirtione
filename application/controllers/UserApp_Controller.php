@@ -10408,10 +10408,30 @@ class UserApp_Controller extends ClientsController {
     }
 
     public function ExpiredStockList($data){
+        $AccountID  = $data['AccountID'];
         $CenterID   = $data['CenterID'] ?? '';
         $PartyID    = $data['PartyID'] ?? '';
         $ItemGroup  = $data['ItemGroup'] ?? '';
         $DaysFilter = $data['Days'] ?? 10;
+
+        $isAdmin = $this->db->select('admin')->from(db_prefix() . 'staff')->where('AccountID', $AccountID)->get()->row()->admin ?? 0;
+        if ($isAdmin) {
+            // If the user is an admin, no need to filter by centers
+        } else {    
+            $centerslist = $this->db->select('*')
+                ->from(db_prefix() . 'Centerwise_staff_priority')
+                ->where('staff_id', $AccountID)
+                ->get()
+                ->result_array();
+            $CenterID = array_column($centerslist, 'CenterID');
+            if (empty($CenterID)) {
+                return [
+                    "status" => true,
+                    "message" => "No centers assigned to this staff.",
+                    "data" => []
+                ];
+            }
+        }
 
         $this->db->select('tblK1history.*,tblproduct.ProductName');
         $this->db->from('tblK1history');
